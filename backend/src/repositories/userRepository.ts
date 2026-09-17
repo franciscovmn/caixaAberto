@@ -8,6 +8,37 @@ async function findAll() {
   });
 }
 
+// Usuarios visiveis sao os que tem vinculo ativo com a organizacao de quem consulta.
+async function findAllByOrganization(organizationId: bigint) {
+  return prisma.user.findMany({
+    where: {
+      memberships: {
+        some: {
+          organizationId,
+          active: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
+async function findByIdInOrganization(id: bigint, organizationId: bigint) {
+  return prisma.user.findFirst({
+    where: {
+      id,
+      memberships: {
+        some: {
+          organizationId,
+          active: true,
+        },
+      },
+    },
+  });
+}
+
 async function findById(id: bigint) {
   return prisma.user.findUnique({
     where: {
@@ -69,6 +100,8 @@ async function deleteById(id: bigint) {
 
 export default {
   findAll,
+  findAllByOrganization,
+  findByIdInOrganization,
   findById,
   findByEmail,
   create,
