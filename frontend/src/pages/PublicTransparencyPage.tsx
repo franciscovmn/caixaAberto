@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 
+import { formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
@@ -96,9 +97,9 @@ export function PublicTransparencyPage() {
       </label>
 
       <section>
-        <p>Entradas: {dados.totals.entries}</p>
-        <p>Saídas: {dados.totals.exits}</p>
-        <p>Saldo: {dados.totals.balance}</p>
+        <p>Entradas: {formatarMoeda(dados.totals.entries)}</p>
+        <p>Saídas: {formatarMoeda(dados.totals.exits)}</p>
+        <p>Saldo: {formatarMoeda(dados.totals.balance)}</p>
       </section>
 
       <table>
@@ -115,7 +116,7 @@ export function PublicTransparencyPage() {
             <tr key={`${linha.type}-${linha.category}`}>
               <td>{linha.category}</td>
               <td>{linha.type}</td>
-              <td>{linha.total}</td>
+              <td>{formatarMoeda(linha.total)}</td>
               <td>{linha.count}</td>
             </tr>
           ))}
