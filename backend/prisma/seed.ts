@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import bcrypt from 'bcrypt';
 import { config } from 'dotenv';
@@ -108,9 +108,7 @@ async function criarCategoria(organizationId: bigint, nome: string, tipo: 'ENTRA
   });
 }
 
-async function main() {
-  assertBancoDeDesenvolvimento();
-
+export async function seedDatabase() {
   const tesoureira = await criarUsuario('Ana Tesoureira', 'ana@exemplo.com');
   const consultor = await criarUsuario('Bruno Consultor', 'bruno@exemplo.com');
 
@@ -125,15 +123,26 @@ async function main() {
   const entradas = new Map<string, bigint>();
   const saidas = new Map<string, bigint>();
 
-  for (const nome of ['Mensalidade', 'Rifa', 'Doação']) {
+  for (const nome of ['Mensalidade', 'Doação', 'Evento', 'Rifa', 'Outros']) {
     const categoria = await criarCategoria(organizacao.id, nome, 'ENTRADA');
     entradas.set(nome, categoria.id);
   }
 
-  for (const nome of ['Material', 'Buffet', 'Decoração']) {
+  for (const nome of ['Material', 'Alimentação', 'Transporte', 'Serviços', 'Outros']) {
     const categoria = await criarCategoria(organizacao.id, nome, 'SAIDA');
     saidas.set(nome, categoria.id);
   }
+
+  // Versoes anteriores do seed usavam estes nomes. Eles permanecem no historico de lançamentos,
+  // mas deixam de aparecer como opcoes para novos registros.
+  await prisma.category.updateMany({
+    where: {
+      organizationId: organizacao.id,
+      type: 'SAIDA',
+      name: { in: ['Buffet', 'Decoração'] },
+    },
+    data: { active: false },
+  });
 
   // Lancamentos nao tem chave natural para upsert, entao so sao criados quando a organizacao ainda
   // nao tem nenhum. Assim rodar o seed de novo nao multiplica o saldo.
@@ -185,7 +194,7 @@ async function main() {
       },
       {
         tipo: 'SAIDA',
-        categoria: 'Buffet',
+        categoria: 'Alimentação',
         valor: '2200.00',
         data: diaDoMes(0, 11),
         descricao: 'Sinal do buffet',
@@ -193,7 +202,7 @@ async function main() {
       },
       {
         tipo: 'SAIDA',
-        categoria: 'Decoração',
+        categoria: 'Serviços',
         valor: '480.75',
         data: diaDoMes(0, 14),
         descricao: 'Aluguel de painéis',
@@ -242,9 +251,17 @@ async function main() {
   console.info(`  consultor:  ${consultor.email} / ${SENHA_PADRAO}`);
 }
 
-main()
-  .catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  })
-  .finally(() => prisma.$disconnect());
+const executadoDiretamente = process.argv[1]
+  ? pathToFileURL(process.argv[1]).href === import.meta.url
+  : false;
+
+if (executadoDiretamente) {
+  assertBancoDeDesenvolvimento();
+
+  seedDatabase()
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}
