@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { ReceiptDetailPreview } from '../components/ReceiptAttachment';
 import { formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 
@@ -133,9 +134,7 @@ export function TransactionDetailPage() {
         <dt>Comprovante</dt>
         <dd>
           {lancamento.receipt ? (
-            <a href={lancamento.receipt.fileUrl} target="_blank" rel="noreferrer">
-              {lancamento.receipt.fileName}
-            </a>
+            <ReceiptDetailPreview transactionId={lancamento.id} receipt={lancamento.receipt} />
           ) : (
             'Nenhum comprovante anexado'
           )}

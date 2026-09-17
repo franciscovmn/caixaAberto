@@ -19,6 +19,11 @@ interface RequestOptions {
   auth?: boolean;
 }
 
+interface UploadOptions {
+  method?: 'POST' | 'PUT' | 'PATCH';
+  auth?: boolean;
+}
+
 async function extractError(response: Response): Promise<ApiError> {
   try {
     const data = await response.json();
@@ -65,4 +70,67 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   return (await response.json()) as T;
+}
+
+export async function apiUploadRequest<T>(
+  path: string,
+  formData: FormData,
+  options: UploadOptions = {},
+): Promise<T> {
+  const { method = 'POST', auth = true } = options;
+  const headers: Record<string, string> = {};
+
+  if (auth) {
+    const token = getToken();
+
+    if (!token) {
+      throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
+    }
+
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    method,
+    headers,
+    body: formData,
+  });
+
+  if (response.status === 401) {
+    clearSession();
+  }
+
+  if (!response.ok) {
+    throw await extractError(response);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function apiBlobRequest(path: string): Promise<Blob> {
+  const token = getToken();
+
+  if (!token) {
+    throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 401) {
+    clearSession();
+  }
+
+  if (!response.ok) {
+    throw await extractError(response);
+  }
+
+  return response.blob();
 }

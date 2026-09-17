@@ -1,14 +1,20 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 
-import { ApiError, apiRequest } from '../lib/httpClient';
+import { ApiError, apiRequest, apiUploadRequest } from '../lib/httpClient';
 import { CategorySelect } from './CategorySelect';
+import { ReceiptUploadField } from './ReceiptAttachment';
 
 export type TransactionType = 'ENTRADA' | 'SAIDA';
 
 interface TransactionResponse {
   id: string;
   type: TransactionType;
+}
+
+interface ReceiptUploadResponse {
+  id: string;
 }
 
 interface TransactionFormProps {
@@ -21,6 +27,11 @@ interface FieldErrors {
   valor?: string;
   data?: string;
   descricao?: string;
+}
+
+interface ReceiptWarning {
+  lancamentoId: string;
+  mensagem: string;
 }
 
 const ROTULOS: Record<TransactionType, { titulo: string; camposParte: string }> = {
@@ -71,7 +82,10 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
   const [data, setData] = useState('');
   const [descricao, setDescricao] = useState('');
   const [parte, setParte] = useState('');
+  const [comprovante, setComprovante] = useState<File | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroComprovante, setErroComprovante] = useState<string | null>(null);
+  const [avisoComprovante, setAvisoComprovante] = useState<ReceiptWarning | null>(null);
   const [errosCampos, setErrosCampos] = useState<FieldErrors>({});
   const [enviando, setEnviando] = useState(false);
 
@@ -80,11 +94,12 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErro(null);
+    setAvisoComprovante(null);
 
     const proximosErros = validarCampos(categoriaId, valor, data, descricao);
     setErrosCampos(proximosErros);
 
-    if (Object.keys(proximosErros).length > 0) {
+    if (Object.keys(proximosErros).length > 0 || erroComprovante) {
       return;
     }
 
@@ -104,11 +119,33 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
         },
       });
 
+      if (comprovante) {
+        const dados = new FormData();
+        dados.append('arquivo', comprovante);
+
+        try {
+          await apiUploadRequest<ReceiptUploadResponse>(
+            `/lancamentos/${lancamento.id}/comprovante`,
+            dados,
+          );
+        } catch (error) {
+          const mensagem =
+            error instanceof ApiError ? error.message : 'Não foi possível anexar o comprovante';
+
+          setAvisoComprovante({
+            lancamentoId: lancamento.id,
+            mensagem: `Lançamento salvo, mas o comprovante não foi anexado: ${mensagem}`,
+          });
+        }
+      }
+
       setCategoriaId('');
       setValor('');
       setData('');
       setDescricao('');
       setParte('');
+      setComprovante(null);
+      setErroComprovante(null);
       setErrosCampos({});
       onCriado?.(lancamento);
     } catch (error) {
@@ -193,7 +230,23 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
         {errosCampos.descricao && <small role="alert">{errosCampos.descricao}</small>}
       </label>
 
+      <ReceiptUploadField
+        file={comprovante}
+        error={erroComprovante}
+        disabled={enviando}
+        onChange={(novoArquivo, novoErro) => {
+          setComprovante(novoArquivo);
+          setErroComprovante(novoErro);
+        }}
+      />
+
       {erro && <p role="alert">{erro}</p>}
+      {avisoComprovante && (
+        <p role="alert">
+          {avisoComprovante.mensagem}{' '}
+          <Link to={`/lancamentos/${avisoComprovante.lancamentoId}`}>Ver lançamento salvo</Link>
+        </p>
+      )}
 
       <button type="submit" disabled={enviando}>
         {enviando ? 'Salvando...' : 'Salvar lançamento'}
