@@ -148,10 +148,20 @@ da URL do outro serviço. Preencha qualquer coisa, conclua a criação e corrija
 1. Depois que os dois serviços aparecerem, anote as URLs atribuídas.
 2. Em `caixa-aberto-api`, ajuste `CORS_ORIGIN` para a URL do site estático.
 3. Em `caixa-aberto-web`, ajuste `VITE_API_URL` para a URL da API.
-4. Faça um novo deploy dos dois. O `VITE_API_URL` é lido no momento do build, então o frontend só
+4. Ainda em `caixa-aberto-web`, abra **Redirects/Rewrites** e crie uma regra com origem `/*`,
+   destino `/index.html` e ação **Rewrite**.
+5. Faça um novo deploy dos dois. O `VITE_API_URL` é lido no momento do build, então o frontend só
    passa a apontar para a API depois de reconstruído.
 
 As duas URLs devem começar com `https://` e não terminar em barra.
+
+O passo 4 é manual por um defeito do lado do Render, e não por escolha. A regra deveria estar no
+[`render.yaml`](render.yaml), mas o servidor recusa o blueprint com `services[1].routes is not
+allowed`, embora `routes` seja documentado para site estático e o arquivo valide sem erro contra o
+schema publicado pelo próprio Render. Sem essa regra, abrir `/extrato` direto no navegador devolve
+404: o react-router usa caminhos reais e o servidor de arquivos procura um arquivo que não existe. O
+Render preserva regras criadas no painel que não estão no blueprint, então ela sobrevive aos deploys
+seguintes.
 
 As migrações são aplicadas na subida do container, pelo `backend/docker-entrypoint.sh`. Não há passo
 manual. O primeiro deploy cria o schema em um banco vazio.
