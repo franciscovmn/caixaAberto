@@ -96,3 +96,23 @@ sem bibliotecas adicionais de requisição. Um login mínimo foi criado para per
 autenticadas nesta etapa; o contrato completo de autenticação e a listagem de organizações do
 usuário pertencem à US01/US13 e não são implementados aqui. A US17 (GET /categorias) já existe e é usada para popular o seletor de categoria
 nos formulários e no filtro de lançamentos.
+
+## 2026-09-17: Testes de componente no frontend
+
+O frontend não tinha testes: `npm test` rodava com `--passWithNoTests` e nenhum arquivo. Quatro
+defeitos chegaram à `main` por esse caminho, todos de validação de formulário e todos com lint,
+typecheck, build e CI verdes: valor com vírgula recusado pela API, descrição vazia aceita pelo
+formulário, descrição só com espaços aceita, e lançamento duplicado quando o upload do comprovante
+falhava. Cada um só apareceu quando alguém abriu a tela e conferiu o banco depois.
+
+Foram adicionados `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`
+e `jsdom` como dependências de desenvolvimento do frontend. São o conjunto padrão para exercitar
+componentes React pela interface, e não trazem runtime para produção.
+
+Os testes substituem o `fetch` global em vez de trocar o módulo `httpClient`. A diferença importa: o
+corpo da requisição é observado como ele sai do navegador, então um valor que o formulário deixa de
+normalizar aparece no teste do mesmo jeito que apareceria no servidor. Com um mock do módulo, a
+asserção seria sobre o argumento passado ao wrapper, e o defeito da vírgula teria passado.
+
+Cada teste foi conferido contra o código anterior à correção: os quatro falham sem a correção
+correspondente e passam com ela.
