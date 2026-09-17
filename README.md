@@ -171,14 +171,29 @@ blueprint define `STORAGE_DRIVER=database`, que grava o conteúdo em `COMPROVANT
 desenvolvimento o padrão continua sendo `local`. O motivo está em
 [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
-### Limites do plano gratuito
+### Manter a API acordada
 
-- A API hiberna após 15 minutos sem acesso, e a primeira requisição depois disso leva cerca de 50
-  segundos. Antes de uma apresentação, abra a URL da API uma vez e espere ela responder.
-- O site estático não hiberna, então a tela de login carrega na hora mesmo com a API dormindo. O
-  primeiro login é que vai esperar.
-- O Postgres gratuito do Render expira depois de 30 dias e é removido. Para manter a aplicação no ar
-  além disso, é preciso migrar para um banco pago ou recriar o serviço.
+A API hiberna após 15 minutos sem acesso, e a primeira requisição depois disso leva cerca de 50
+segundos. O site estático não hiberna, então a tela de login carrega na hora e é o primeiro login
+que espera, o que parece uma aplicação travada.
+
+O workflow [`manter-api-acordada.yml`](.github/workflows/manter-api-acordada.yml) evita isso
+chamando `/health` a cada dez minutos. Ele depende de uma variável de repositório:
+
+1. Vá em **Settings > Secrets and variables > Actions > Variables**.
+2. Crie `API_URL` com a URL da API publicada, começando com `https://` e sem barra no final.
+
+Enquanto a variável não existir, o workflow não falha: ele avisa e encerra. Depois de criada, dá
+para conferir rodando o workflow manualmente pela aba **Actions**, em **Run workflow**.
+
+Antes de uma apresentação, vale acionar esse mesmo botão e esperar o job terminar. O agendamento do
+GitHub Actions pode atrasar alguns minutos em horário de pico, e o disparo manual é o único que
+garante a API acordada na hora.
+
+Dois avisos sobre o agendamento: o GitHub desativa workflows agendados em repositórios públicos
+depois de 60 dias sem commits, e é preciso reativá-los pela aba Actions; e o Postgres gratuito do
+Render expira depois de 30 dias e é removido, então manter a aplicação no ar além disso exige um
+banco pago ou recriar o serviço.
 
 ## Fluxo de contribuição
 
