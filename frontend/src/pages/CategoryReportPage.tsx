@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 
 type CategoryType = 'ENTRADA' | 'SAIDA';
@@ -29,19 +30,6 @@ function primeiroDiaDoMesAtual(): string {
 
 function hojeISO(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function formatarMoeda(valor: string): string {
-  const numero = Number(valor);
-
-  if (!Number.isFinite(numero)) {
-    return valor;
-  }
-
-  return numero.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
 }
 
 function rotuloTipo(tipo: CategoryType): string {
@@ -137,7 +125,7 @@ export function CategoryReportPage() {
         </label>
 
         <label>
-          Ate
+          Até
           <input
             type="date"
             value={dataFim}

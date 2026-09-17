@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
@@ -205,7 +206,7 @@ export function TransactionsListPage() {
                 <td>{lancamento.data}</td>
                 <td>{lancamento.descricao}</td>
                 <td>{lancamento.categoria.nome}</td>
-                <td>{lancamento.valor}</td>
+                <td>{formatarMoeda(lancamento.valor)}</td>
                 <td>{lancamento.tipo}</td>
                 <td>{lancamento.status}</td>
                 <td>{lancamento.possuiComprovante ? 'Sim' : 'Não'}</td>

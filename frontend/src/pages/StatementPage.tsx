@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
@@ -115,7 +116,7 @@ export function StatementPage() {
 
       {extrato && (
         <>
-          <p>Saldo anterior: {extrato.saldoAnterior}</p>
+          <p>Saldo anterior: {formatarMoeda(extrato.saldoAnterior)}</p>
 
           <table>
             <thead>
@@ -136,15 +137,17 @@ export function StatementPage() {
                   <td>{linha.tipo}</td>
                   <td>{linha.categoria.nome}</td>
                   <td>{linha.descricao}</td>
-                  <td>{linha.valor}</td>
+                  <td>{formatarMoeda(linha.valor)}</td>
                   <td>{linha.status}</td>
-                  <td>{linha.status === 'ESTORNADO' ? '—' : linha.saldoAcumulado}</td>
+                  <td>
+                    {linha.status === 'ESTORNADO' ? '-' : formatarMoeda(linha.saldoAcumulado)}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <p>Saldo final: {extrato.saldoFinal}</p>
+          <p>Saldo final: {formatarMoeda(extrato.saldoFinal)}</p>
         </>
       )}
     </main>

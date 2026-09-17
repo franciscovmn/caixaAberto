@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 
 interface MonthlySummaryResponse {
@@ -81,16 +82,16 @@ export function MonthlySummaryPage() {
         <section>
           <article>
             <h2>{formatarMes(resumo.month)}</h2>
-            <p>Entradas: {resumo.entries}</p>
-            <p>Saídas: {resumo.exits}</p>
-            <p>Saldo: {resumo.balance}</p>
+            <p>Entradas: {formatarMoeda(resumo.entries)}</p>
+            <p>Saídas: {formatarMoeda(resumo.exits)}</p>
+            <p>Saldo: {formatarMoeda(resumo.balance)}</p>
           </article>
 
           <article>
             <h2>{formatarMes(resumo.previousMonth.month)} (mês anterior)</h2>
-            <p>Entradas: {resumo.previousMonth.entries}</p>
-            <p>Saídas: {resumo.previousMonth.exits}</p>
-            <p>Saldo: {resumo.previousMonth.balance}</p>
+            <p>Entradas: {formatarMoeda(resumo.previousMonth.entries)}</p>
+            <p>Saídas: {formatarMoeda(resumo.previousMonth.exits)}</p>
+            <p>Saldo: {formatarMoeda(resumo.previousMonth.balance)}</p>
           </article>
         </section>
       )}

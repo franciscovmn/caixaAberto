@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
@@ -101,7 +102,7 @@ export function TransactionDetailPage() {
         <dd>{lancamento.type}</dd>
 
         <dt>Valor</dt>
-        <dd>{lancamento.amount}</dd>
+        <dd>{formatarMoeda(lancamento.amount)}</dd>
 
         <dt>Descrição</dt>
         <dd>{lancamento.description}</dd>
