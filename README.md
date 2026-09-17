@@ -34,10 +34,25 @@ cp frontend/.env.example frontend/.env
 npm install
 docker compose up -d postgres postgres-test
 npm run prisma:migrate:deploy -w backend
+npm run seed
 ```
 
 O `npm install` executa `prisma generate` automaticamente pelo `postinstall` do backend. Para gerar
 o client manualmente durante um diagnóstico, use `npm run prisma:generate -w backend`.
+
+O `npm run seed` popula o banco de desenvolvimento com uma organização, categorias de entrada e de
+saída e lançamentos nos dois últimos meses, o suficiente para extrato, resumo mensal e relatório por
+categoria terem conteúdo. Sem ele não há usuário para entrar no sistema. Os logins criados são:
+
+| E-mail              | Senha         | Papel        |
+| ------------------- | ------------- | ------------ |
+| `ana@exemplo.com`   | `senha123456` | `TESOUREIRO` |
+| `bruno@exemplo.com` | `senha123456` | `CONSULTOR`  |
+
+O seed pode ser executado quantas vezes for preciso: ele atualiza o que já existe em vez de
+duplicar. Para recomeçar do zero, recrie o banco e rode as migrações de novo. Ele recusa rodar com
+`NODE_ENV=test` ou contra um banco cujo nome identifique um ambiente de teste, para não interferir
+no isolamento da suíte.
 
 Inicie os aplicativos em terminais separados:
 
