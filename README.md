@@ -97,6 +97,14 @@ npm run typecheck
 npm test
 ```
 
+A suíte cobre os dois lados. O frontend usa Vitest com Testing Library e ambiente `jsdom`, e
+exercita os componentes pela interface: os testes preenchem o formulário, clicam e conferem o que
+sai na requisição. Eles não precisam de banco nem da API no ar:
+
+```bash
+npm test --workspace @caixa-aberto/frontend
+```
+
 Os testes de integração do backend usam Vitest e Supertest. Antes de executar a suíte, crie o
 ambiente local:
 
