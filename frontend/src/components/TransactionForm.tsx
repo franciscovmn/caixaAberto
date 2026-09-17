@@ -161,10 +161,9 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
     <form
       onSubmit={handleSubmit}
       noValidate
+      aria-label={rotulo.titulo}
       className={`transaction-form transaction-form--${tipo.toLowerCase()}`}
     >
-      <h2>{rotulo.titulo}</h2>
-
       <CategorySelect
         tipo={tipo}
         value={categoriaId}

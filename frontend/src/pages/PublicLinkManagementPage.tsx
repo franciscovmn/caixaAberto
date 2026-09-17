@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { ApiError, apiRequest } from '../lib/httpClient';
+import { useTituloPagina } from '../lib/useTituloPagina';
 
 interface PublicLinkResponse {
   token: string;
@@ -12,6 +13,8 @@ function montarUrlPublica(token: string): string {
 }
 
 export function PublicLinkManagementPage() {
+  useTituloPagina('Link público');
+
   const [link, setLink] = useState<PublicLinkResponse | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
@@ -80,10 +83,23 @@ export function PublicLinkManagementPage() {
 
   return (
     <main>
-      <h1>Link público</h1>
+      <div className="cabecalho-pagina">
+        <div>
+          <h1>Link público</h1>
+          <p className="cabecalho-pagina__apoio">
+            O endereço que qualquer pessoa pode abrir para acompanhar a prestação de contas, sem
+            login e sem dados pessoais.
+          </p>
+        </div>
+      </div>
 
       <section className="public-link-panel">
-        <p>Status: {link ? (link.ativo ? 'Ativo' : 'Inativo') : 'Não gerado nesta sessão'}</p>
+        <p>
+          Situação:{' '}
+          <span className="etiqueta">
+            {link ? (link.ativo ? 'Ativo' : 'Inativo') : 'Não gerado nesta sessão'}
+          </span>
+        </p>
 
         {link && (
           <label>
@@ -97,12 +113,18 @@ export function PublicLinkManagementPage() {
             {link ? 'Gerar novo link' : 'Gerar link público'}
           </button>
 
-          <button type="button" onClick={copiarLink} disabled={!link || copiando}>
+          <button
+            type="button"
+            data-variante="secundario"
+            onClick={copiarLink}
+            disabled={!link || copiando}
+          >
             {copiando ? 'Copiando...' : 'Copiar'}
           </button>
 
           <button
             type="button"
+            data-variante="secundario"
             onClick={() => alterarEstado(true)}
             disabled={!link || link.ativo || processando}
           >
@@ -111,6 +133,7 @@ export function PublicLinkManagementPage() {
 
           <button
             type="button"
+            data-variante="secundario"
             onClick={() => alterarEstado(false)}
             disabled={!link || !link.ativo || processando}
           >

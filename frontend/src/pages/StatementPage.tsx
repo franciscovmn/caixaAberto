@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { formatarMoeda } from '../lib/formato';
+import { EstadoVazio } from '../components/ui/EstadoVazio';
+import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
+import { TabelaRolavel } from '../components/ui/TabelaRolavel';
+import { formatarData, formatarMoeda, rotuloTipo, valorComSinal } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
+import { useTituloPagina } from '../lib/useTituloPagina';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
 
@@ -25,6 +29,8 @@ interface StatementResponse {
   saldoFinal: string;
 }
 
+const COLUNAS = 5;
+
 function primeiroDiaDoMesAtual(): string {
   const hoje = new Date();
   return new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
@@ -35,6 +41,8 @@ function hojeISO(): string {
 }
 
 export function StatementPage() {
+  useTituloPagina('Extrato');
+
   const [dataInicio, setDataInicio] = useState(primeiroDiaDoMesAtual());
   const [dataFim, setDataFim] = useState(hojeISO());
   const [periodoConsultado, setPeriodoConsultado] = useState({
@@ -83,72 +91,132 @@ export function StatementPage() {
     setPeriodoConsultado({ dataInicio, dataFim });
   }
 
+  const semLinhas = Boolean(extrato && extrato.linhas.length === 0 && !carregando);
+
   return (
-    <main>
-      <h1>Extrato</h1>
+    <main data-largura="ampla">
+      <div className="cabecalho-pagina">
+        <div>
+          <h1>Extrato</h1>
+          <p className="cabecalho-pagina__apoio">
+            Movimentações de {formatarData(periodoConsultado.dataInicio)} a{' '}
+            {formatarData(periodoConsultado.dataFim)}, com saldo acumulado linha a linha.
+          </p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit}>
-        <label>
-          De
-          <input
-            type="date"
-            value={dataInicio}
-            onChange={(event) => setDataInicio(event.target.value)}
-            required
-          />
-        </label>
+        <fieldset className="filtros">
+          <legend>Período</legend>
 
-        <label>
-          Até
-          <input
-            type="date"
-            value={dataFim}
-            onChange={(event) => setDataFim(event.target.value)}
-            required
-          />
-        </label>
+          <div className="filtros__campos">
+            <label>
+              De
+              <input
+                type="date"
+                value={dataInicio}
+                onChange={(event) => setDataInicio(event.target.value)}
+                required
+              />
+            </label>
 
-        <button type="submit">Consultar</button>
+            <label>
+              Até
+              <input
+                type="date"
+                value={dataFim}
+                onChange={(event) => setDataFim(event.target.value)}
+                required
+              />
+            </label>
+
+            <button type="submit" data-variante="secundario">
+              Consultar
+            </button>
+          </div>
+        </fieldset>
       </form>
 
-      {carregando && <p role="status">Carregando...</p>}
+      {carregando && (
+        <p role="status" className="apenas-leitor">
+          Carregando extrato
+        </p>
+      )}
       {erro && <p role="alert">{erro}</p>}
 
       {extrato && (
         <>
-          <p>Saldo anterior: {formatarMoeda(extrato.saldoAnterior)}</p>
+          <section className="numeros" aria-label="Saldos do período">
+            <div className="numeros__item">
+              <span className="numeros__rotulo">Saldo anterior</span>
+              <strong className="numeros__valor">{formatarMoeda(extrato.saldoAnterior)}</strong>
+            </div>
+            <div className="numeros__item numeros__item--saldo">
+              <span className="numeros__rotulo">Saldo final</span>
+              <strong className="numeros__valor">{formatarMoeda(extrato.saldoFinal)}</strong>
+              <span className="numeros__apoio">
+                {extrato.linhas.length}{' '}
+                {extrato.linhas.length === 1 ? 'movimentação' : 'movimentações'} no período
+              </span>
+            </div>
+          </section>
 
+          {semLinhas && (
+            <EstadoVazio
+              titulo="Sem movimentações no período"
+              descricao="O saldo não mudou entre as datas escolhidas. Escolha um intervalo maior para ver a trilha de lançamentos."
+            />
+          )}
+        </>
+      )}
+
+      {(carregando || (extrato && extrato.linhas.length > 0)) && (
+        <TabelaRolavel titulo="Extrato de movimentações">
           <table>
             <thead>
               <tr>
                 <th>Data</th>
-                <th>Tipo</th>
-                <th>Categoria</th>
                 <th>Descrição</th>
-                <th>Valor</th>
-                <th>Status</th>
-                <th>Saldo acumulado</th>
+                <th>Categoria</th>
+                <th data-alinha="direita">Valor</th>
+                <th data-alinha="direita">Saldo acumulado</th>
               </tr>
             </thead>
-            <tbody>
-              {extrato.linhas.map((linha) => (
-                <tr key={linha.id}>
-                  <td>{linha.data}</td>
-                  <td>{linha.tipo}</td>
-                  <td>{linha.categoria.nome}</td>
-                  <td>{linha.descricao}</td>
-                  <td>{formatarMoeda(linha.valor)}</td>
-                  <td>{linha.status}</td>
-                  <td>
-                    {linha.status === 'ESTORNADO' ? '-' : formatarMoeda(linha.saldoAcumulado)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
 
-          <p>Saldo final: {formatarMoeda(extrato.saldoFinal)}</p>
-        </>
+            {carregando && <TabelaEsqueleto colunas={COLUNAS} />}
+
+            {!carregando && extrato && (
+              <tbody>
+                {extrato.linhas.map((linha) => (
+                  <tr
+                    key={linha.id}
+                    className={linha.status === 'ESTORNADO' ? 'linha--estornada' : undefined}
+                  >
+                    <td>{formatarData(linha.data)}</td>
+                    <td data-coluna="texto">
+                      {linha.descricao}{' '}
+                      {linha.status === 'ESTORNADO' && (
+                        <span className="etiqueta etiqueta--estornado">Estornado</span>
+                      )}
+                    </td>
+                    <td data-coluna="texto">{linha.categoria.nome}</td>
+                    <td data-alinha="direita">
+                      <span
+                        className={`valor valor--${linha.tipo.toLowerCase()}`}
+                        aria-label={`${rotuloTipo(linha.tipo)} de ${formatarMoeda(linha.valor)}`}
+                      >
+                        {valorComSinal(linha.tipo, linha.valor)}
+                      </span>
+                    </td>
+                    <td data-alinha="direita">
+                      {linha.status === 'ESTORNADO' ? '-' : formatarMoeda(linha.saldoAcumulado)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </TabelaRolavel>
       )}
     </main>
   );
