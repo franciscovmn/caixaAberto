@@ -309,6 +309,27 @@ nav {
   border-left-color: var(--color-saida);
 }
 
+.receipt-preview {
+  margin: var(--space-2) 0 0;
+}
+
+.receipt-preview img {
+  display: block;
+  max-width: min(100%, 360px);
+  max-height: 240px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+  object-fit: contain;
+}
+
+.receipt-preview figcaption,
+.receipt-detail small {
+  display: block;
+  margin-top: var(--space-1);
+  font-family: var(--font-sans);
+  color: var(--color-ink-soft);
+}
+
 @media (max-width: 480px) {
   main {
     padding: var(--space-4) var(--space-2);

@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { ApiError, apiRequest } from '../lib/httpClient';
+import { ApiError, apiRequest, apiUploadRequest } from '../lib/httpClient';
 import { CategorySelect } from './CategorySelect';
+import { ReceiptUploadField } from './ReceiptAttachment';
 
 export type TransactionType = 'ENTRADA' | 'SAIDA';
 
 interface TransactionResponse {
   id: string;
   type: TransactionType;
+}
+
+interface ReceiptUploadResponse {
+  id: string;
 }
 
 interface TransactionFormProps {
@@ -71,7 +76,9 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
   const [data, setData] = useState('');
   const [descricao, setDescricao] = useState('');
   const [parte, setParte] = useState('');
+  const [comprovante, setComprovante] = useState<File | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroComprovante, setErroComprovante] = useState<string | null>(null);
   const [errosCampos, setErrosCampos] = useState<FieldErrors>({});
   const [enviando, setEnviando] = useState(false);
 
@@ -84,7 +91,7 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
     const proximosErros = validarCampos(categoriaId, valor, data, descricao);
     setErrosCampos(proximosErros);
 
-    if (Object.keys(proximosErros).length > 0) {
+    if (Object.keys(proximosErros).length > 0 || erroComprovante) {
       return;
     }
 
@@ -104,11 +111,23 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
         },
       });
 
+      if (comprovante) {
+        const dados = new FormData();
+        dados.append('arquivo', comprovante);
+
+        await apiUploadRequest<ReceiptUploadResponse>(
+          `/lancamentos/${lancamento.id}/comprovante`,
+          dados,
+        );
+      }
+
       setCategoriaId('');
       setValor('');
       setData('');
       setDescricao('');
       setParte('');
+      setComprovante(null);
+      setErroComprovante(null);
       setErrosCampos({});
       onCriado?.(lancamento);
     } catch (error) {
@@ -192,6 +211,16 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
         />
         {errosCampos.descricao && <small role="alert">{errosCampos.descricao}</small>}
       </label>
+
+      <ReceiptUploadField
+        file={comprovante}
+        error={erroComprovante}
+        disabled={enviando}
+        onChange={(novoArquivo, novoErro) => {
+          setComprovante(novoArquivo);
+          setErroComprovante(novoErro);
+        }}
+      />
 
       {erro && <p role="alert">{erro}</p>}
 
