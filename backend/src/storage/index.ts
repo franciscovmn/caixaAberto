@@ -1,5 +1,6 @@
 import { readEnvironment } from '../config/environment.js';
 import { AppError } from '../errors/app-error.js';
+import { DatabaseStorage } from './databaseStorage.js';
 import { LocalDiskStorage } from './localDiskStorage.js';
 import type { StorageService } from './types.js';
 
@@ -7,6 +8,7 @@ import type { StorageService } from './types.js';
 // implementa StorageService e registrar uma linha aqui, sem tocar em controller, servico ou teste.
 const driverFactories: Record<string, (uploadDirectory: string) => StorageService> = {
   local: (uploadDirectory) => new LocalDiskStorage(uploadDirectory),
+  database: () => new DatabaseStorage(),
 };
 
 export function getStorageService(): StorageService {

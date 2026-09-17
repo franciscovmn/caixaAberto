@@ -1,0 +1,49 @@
+# O plano gratuito do Render hiberna a API depois de 15 minutos sem acesso, e a primeira requisicao
+# seguinte leva cerca de 50 segundos. Este agendamento mantem o servico acordado.
+#
+# Depende da variavel de repositorio API_URL, em Settings > Secrets and variables > Actions >
+# Variables, com a URL da API publicada, comecando com https e sem barra no final. Enquanto ela nao
+# existir o job nao falha: ele avisa e encerra.
+name: Manter API acordada
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manter-api-acordada
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Acordar a API
+        env:
+          # Interpolado como variavel de ambiente, e nao direto no script, para que o conteudo nunca
+          # seja interpretado como comando pelo shell.
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          # Sem isto, o codigo de saida do passo seria o do ultimo echo, e uma API fora do ar
+          # terminaria o job em verde.
+          set -euo pipefail
+
+          if [ -z "$API_URL" ]; then
+            echo "A variável de repositório API_URL não está definida. Nada a fazer."
+            echo "Defina-a em Settings > Secrets and variables > Actions > Variables."
+            exit 0
+          fi
+
+          # O tempo limite é generoso de propósito: quando o serviço está hibernando, esta é
+          # justamente a requisição que espera os cerca de 50 segundos da subida.
+          curl --fail --silent --show-error \
+            --max-time 120 \
+            --retry 3 --retry-delay 15 --retry-all-errors \
+            "$API_URL/health"
+
+          echo ""
+          echo "API respondeu em $API_URL/health"

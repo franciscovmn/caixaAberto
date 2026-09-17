@@ -117,3 +117,15 @@ model Goal {
   @@index([organizationId], map: "META_organizacao_id_idx")
   @@map("META")
 }
+
+// Conteudo dos comprovantes para o driver de armazenamento "database", usado onde nao ha disco
+// persistente. Nao tem chave estrangeira para COMPROVANTE de proposito: a gravacao do arquivo roda
+// dentro da transacao que cria a linha do comprovante, porem em outra conexao, e uma FK faria esse
+// insert esperar por uma linha ainda nao commitada. O orfao que isso permite e limpo pelo servico.
+model ReceiptFile {
+  key       String   @id @map("chave") @db.VarChar(500)
+  content   Bytes    @map("conteudo")
+  createdAt DateTime @map("data_criacao") @db.Timestamp(6)
+
+  @@map("COMPROVANTE_ARQUIVO")
+}

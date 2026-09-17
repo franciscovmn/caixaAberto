@@ -1,0 +1,56 @@
+# Blueprint do Render: banco, API e frontend.
+#
+# CORS_ORIGIN e VITE_API_URL ficam com sync: false porque uma depende da URL da outra, e nenhuma das
+# duas existe antes do primeiro deploy. O Render pergunta os dois valores na criacao do blueprint;
+# se as URLs ainda nao forem conhecidas, basta deixar qualquer valor e corrigir depois no painel,
+# conforme o passo a passo do README.
+
+databases:
+  - name: caixa-aberto-db
+    databaseName: caixa_aberto
+    user: caixa_aberto
+    plan: free
+
+services:
+  - type: web
+    name: caixa-aberto-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: caixa-aberto-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # Sem disco persistente no plano gratuito, os comprovantes vao para o proprio Postgres.
+      - key: STORAGE_DRIVER
+        value: database
+      - key: UPLOAD_MAX_BYTES
+        value: 5242880
+      # A URL do site estatico, com https e sem barra no final.
+      - key: CORS_ORIGIN
+        sync: false
+
+  - type: web
+    name: caixa-aberto-web
+    runtime: static
+    # O npm ci dispara o postinstall do backend, que roda prisma generate e exige uma DATABASE_URL
+    # so para ler o schema. Nenhuma conexao e aberta, entao um valor de fachada resolve.
+    buildCommand: DATABASE_URL=postgresql://build:build@localhost:5432/build npm ci && npm run build -w frontend
+    staticPublishPath: ./frontend/dist
+    # O react-router usa caminhos reais, entao qualquer URL aberta direto precisa cair no index.html
+    # em vez de 404 do servidor de arquivos.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # A URL da API, com https e sem barra no final. Lida no momento do build pelo Vite.
+      - key: VITE_API_URL
+        sync: false
