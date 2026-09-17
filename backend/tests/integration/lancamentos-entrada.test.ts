@@ -62,7 +62,7 @@ describe('registro de entrada financeira (US18)', () => {
       });
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBe(
+    expect(response.body.erro).toBe(
       'categoryId, amount, date e description são obrigatórios e válidos.',
     );
   });
@@ -114,7 +114,7 @@ describe('registro de entrada financeira (US18)', () => {
       });
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBe(
+    expect(response.body.erro).toBe(
       'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
     );
   });
@@ -139,7 +139,7 @@ describe('registro de entrada financeira (US18)', () => {
       });
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBe(
+    expect(response.body.erro).toBe(
       'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
     );
   });
@@ -177,5 +177,53 @@ describe('registro de entrada financeira (US18)', () => {
     expect(resumoDepois.status).toBe(200);
     expect(resumoDepois.body.entries).toBe('300');
     expect(resumoDepois.body.balance).toBe('300');
+  });
+
+  // O construtor de Date aceita dia inexistente e rola para o mes seguinte: 2026-02-30
+  // era gravado como 2026-03-02, mudando a competencia do lancamento sem aviso.
+  it('Cenário 7 - dia inexistente no mês não é aceito', async () => {
+    const { organization, authorization } = await criarOrganizacaoComTesoureiro();
+    const categoria = await createCategory({
+      organizationId: organization.id,
+      name: 'Mensalidade',
+      type: 'ENTRADA',
+    });
+
+    const response = await request(createApp())
+      .post('/transactions')
+      .set('Authorization', authorization)
+      .send({
+        categoryId: categoria.id.toString(),
+        amount: '10.00',
+        date: '2026-02-30',
+        description: 'Data inexistente',
+        tipo: 'ENTRADA',
+      });
+
+    expect(response.status).toBe(400);
+  });
+
+  // Acima do que DECIMAL(12,2) comporta o insert falhava no banco e virava 500.
+  it('Cenário 8 - valor acima do limite da coluna retorna 400', async () => {
+    const { organization, authorization } = await criarOrganizacaoComTesoureiro();
+    const categoria = await createCategory({
+      organizationId: organization.id,
+      name: 'Mensalidade',
+      type: 'ENTRADA',
+    });
+
+    const response = await request(createApp())
+      .post('/transactions')
+      .set('Authorization', authorization)
+      .send({
+        categoryId: categoria.id.toString(),
+        amount: '10000000000.00',
+        date: '2026-09-17',
+        description: 'Valor acima do limite',
+        tipo: 'ENTRADA',
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).not.toMatchObject({ erro: 'Erro interno ao registrar lançamento.' });
   });
 });

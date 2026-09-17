@@ -227,6 +227,6 @@ describe('resumo financeiro mensal (US29)', () => {
       .set('Authorization', authorization);
 
     expect(response.status).toBe(400);
-    expect(response.body).toEqual({ error: 'mes deve estar no formato YYYY-MM.' });
+    expect(response.body).toEqual({ erro: 'mes deve estar no formato YYYY-MM.' });
   });
 });
