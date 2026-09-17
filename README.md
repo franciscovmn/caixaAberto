@@ -78,7 +78,7 @@ npm run prisma:migrate:deploy -w backend
 ```
 
 O banco de teste fica na porta `5433`. O harness aplica as migrações automaticamente antes da suíte
-e limpa as sete tabelas entre os testes. Para aplicar migrações nele manualmente:
+e limpa as nove tabelas entre os testes. Para aplicar migrações nele manualmente:
 
 ```bash
 DATABASE_URL="postgresql://caixa_aberto:caixa_aberto@localhost:5433/caixa_aberto_test?schema=public" \
