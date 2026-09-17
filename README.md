@@ -10,14 +10,14 @@ O projeto é um monorepo npm:
 
 ```text
 backend/   API REST em Node.js, TypeScript, Express, Prisma e PostgreSQL
-frontend/  esqueleto React + TypeScript criado com a estrutura do Vite
+frontend/  aplicação React + TypeScript com Vite e react-router
 docs/      decisões, modelo de dados e contrato da API
 ```
 
-Nesta etapa, o frontend ainda é um esqueleto sem telas de produto. O backend já contém uma primeira
-implementação de autenticação, escrita de lançamentos, resumo mensal e transparência pública; os
-caminhos temporários em inglês serão migrados em tasks próprias para o contrato em português de
-[`docs/API.md`](docs/API.md).
+O frontend cobre as telas do Sprint 1: autenticação, registro de entrada e de saída, listagem e
+detalhe de lançamentos, extrato, resumo mensal, relatório por categoria e transparência pública.
+Alguns caminhos temporários em inglês ainda serão migrados em tasks próprias para o contrato em
+português de [`docs/API.md`](docs/API.md).
 
 ## Requisitos
 
@@ -135,6 +135,50 @@ banco não identificar explicitamente um ambiente de teste.
 
 Pendência de integração: Gabriel, responsável por DevOps no time, deve validar o caminho principal
 com `docker compose up -d postgres-test` em um ambiente com Docker disponível.
+
+## Publicação
+
+A aplicação é publicada no Render a partir do blueprint em [`render.yaml`](render.yaml), que cria
+três recursos: um Postgres gerenciado, a API em Docker e o frontend como site estático.
+
+No painel do Render, escolha **New > Blueprint**, conecte este repositório e aponte para a branch
+`main`. O Render vai pedir dois valores que ainda não existem nesse momento, porque cada um depende
+da URL do outro serviço. Preencha qualquer coisa, conclua a criação e corrija em seguida:
+
+1. Depois que os dois serviços aparecerem, anote as URLs atribuídas.
+2. Em `caixa-aberto-api`, ajuste `CORS_ORIGIN` para a URL do site estático.
+3. Em `caixa-aberto-web`, ajuste `VITE_API_URL` para a URL da API.
+4. Faça um novo deploy dos dois. O `VITE_API_URL` é lido no momento do build, então o frontend só
+   passa a apontar para a API depois de reconstruído.
+
+As duas URLs devem começar com `https://` e não terminar em barra.
+
+As migrações são aplicadas na subida do container, pelo `backend/docker-entrypoint.sh`. Não há passo
+manual. O primeiro deploy cria o schema em um banco vazio.
+
+O banco sobe sem nenhum usuário, e sem usuário não há como entrar. Rode o seed uma vez contra o banco
+publicado, usando a connection string externa que o Render mostra na página do Postgres:
+
+```bash
+DATABASE_URL="<connection string externa do Render>" npm run seed
+```
+
+### O que muda em produção
+
+Os comprovantes são guardados no próprio Postgres, e não em disco. O plano gratuito não tem volume
+persistente, então um arquivo gravado no sistema de arquivos desaparece no deploy seguinte. O
+blueprint define `STORAGE_DRIVER=database`, que grava o conteúdo em `COMPROVANTE_ARQUIVO`. Em
+desenvolvimento o padrão continua sendo `local`. O motivo está em
+[`docs/DECISIONS.md`](docs/DECISIONS.md).
+
+### Limites do plano gratuito
+
+- A API hiberna após 15 minutos sem acesso, e a primeira requisição depois disso leva cerca de 50
+  segundos. Antes de uma apresentação, abra a URL da API uma vez e espere ela responder.
+- O site estático não hiberna, então a tela de login carrega na hora mesmo com a API dormindo. O
+  primeiro login é que vai esperar.
+- O Postgres gratuito do Render expira depois de 30 dias e é removido. Para manter a aplicação no ar
+  além disso, é preciso migrar para um banco pago ou recriar o serviço.
 
 ## Fluxo de contribuição
 

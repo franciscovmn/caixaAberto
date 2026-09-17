@@ -7,6 +7,7 @@ const { prisma } = await import('../../src/database/client.js');
 beforeEach(async () => {
   await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
+      "COMPROVANTE_ARQUIVO",
       "COMPROVANTE",
       "LANCAMENTO",
       "META",

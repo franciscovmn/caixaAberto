@@ -116,3 +116,34 @@ asserção seria sobre o argumento passado ao wrapper, e o defeito da vírgula t
 
 Cada teste foi conferido contra o código anterior à correção: os quatro falham sem a correção
 correspondente e passam com ela.
+
+## 2026-09-17: Publicação no Render e comprovantes no banco
+
+A aplicação precisava ficar disponível em uma URL pública. Foi escolhido o Render, cujo plano
+gratuito cobre os três recursos necessários: Postgres gerenciado, a API a partir do
+`backend/Dockerfile` e o frontend como site estático. O blueprint está em `render.yaml`.
+
+São dois serviços, e não um só servindo tudo. Servir o frontend pelo próprio Express eliminaria o
+CORS e daria uma URL única, mas não é possível sem reescrever o contrato da API: `/lancamentos`,
+`/extrato` e `/relatorios/categorias` são ao mesmo tempo rotas do react-router e prefixos montados
+no Express. Na mesma origem, `GET /lancamentos` teria que responder JSON para o aplicativo e
+`index.html` para quem digita a URL, e desempatar pelo cabeçalho `Accept` quebra em qualquer cliente
+que não declare o que aceita. Mover a API para `/api` resolveria, e é o caminho recomendado se a
+separação incomodar depois, mas altera `docs/API.md` e todos os testes de integração.
+
+O driver de armazenamento `database` foi acrescentado porque o plano gratuito não oferece disco
+persistente: um comprovante gravado no sistema de arquivos desaparece no deploy seguinte, e a US22
+deixaria de funcionar em produção sem nenhum erro visível. O conteúdo passa a ficar em
+`COMPROVANTE_ARQUIVO`, e o driver entrou como uma linha no registro de `src/storage/index.ts`, sem
+tocar em controller, serviço ou nos testes que já existiam.
+
+A tabela não tem chave estrangeira para `COMPROVANTE`. A gravação do arquivo roda dentro da
+transação que cria a linha do comprovante, porém em outra conexão, então uma chave estrangeira faria
+o insert esperar por uma linha ainda não commitada e a requisição travaria até o timeout. Sem ela as
+duas tabelas nunca disputam o mesmo lock, e o órfão que isso permite é desfeito pela compensação que
+o `receiptService` já tinha para o driver local.
+
+A imagem de produção deixou de podar as dependências de desenvolvimento. O CLI do Prisma e o `tsx`
+que lê o `prisma.config.ts` estão entre elas, e são o que aplica as migrações na subida do
+container, já que o plano gratuito não oferece um passo separado antes do deploy. A imagem fica
+maior em troca de conseguir migrar o banco.

@@ -1,0 +1,8 @@
+-- CreateTable
+CREATE TABLE "COMPROVANTE_ARQUIVO" (
+    "chave" VARCHAR(500) NOT NULL,
+    "conteudo" BYTEA NOT NULL,
+    "data_criacao" TIMESTAMP(6) NOT NULL,
+
+    CONSTRAINT "COMPROVANTE_ARQUIVO_pkey" PRIMARY KEY ("chave")
+);
