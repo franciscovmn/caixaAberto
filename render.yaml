@@ -44,12 +44,20 @@ services:
     # so para ler o schema. Nenhuma conexao e aberta, entao um valor de fachada resolve.
     buildCommand: DATABASE_URL=postgresql://build:build@localhost:5432/build npm ci && npm run build -w frontend
     staticPublishPath: ./frontend/dist
-    # O react-router usa caminhos reais, entao qualquer URL aberta direto precisa cair no index.html
-    # em vez de 404 do servidor de arquivos.
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    # A regra de rewrite que manda todo caminho para o index.html NAO esta aqui, e precisa ser criada
+    # a mao no painel, em Redirects/Rewrites. O motivo e um defeito do lado do Render: o servidor
+    # recusa o blueprint com "services[1].routes is not allowed", embora `routes` seja documentado
+    # para site estatico e este arquivo valide sem erro contra o schema publicado em
+    # https://render.com/schema/render.yaml.json. O painel aceita a mesma regra sem reclamar, e o
+    # Render preserva regras de roteamento que nao estao no blueprint, entao ela sobrevive aos
+    # deploys seguintes. Quando o validador deles for corrigido, basta devolver o bloco:
+    #
+    #   routes:
+    #     - type: rewrite
+    #       source: /*
+    #       destination: /index.html
+    #
+    # O passo manual esta no README, em Publicacao.
     envVars:
       # A URL da API, com https e sem barra no final. Lida no momento do build pelo Vite.
       - key: VITE_API_URL
