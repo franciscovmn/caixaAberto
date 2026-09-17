@@ -100,7 +100,7 @@ export function CategorySelect({
             : erro
               ? 'Não foi possível carregar categorias'
               : categorias.length === 0
-                ? 'Nenhuma categoria disponivel'
+                ? 'Nenhuma categoria disponível'
                 : 'Selecione uma categoria'}
         </option>
         {categorias.map((categoria) => (

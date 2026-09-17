@@ -134,7 +134,7 @@ export function CategoryReportPage() {
           />
         </label>
 
-        <button type="submit">Gerar relatorio</button>
+        <button type="submit">Gerar relatório</button>
       </form>
 
       {carregando && <p role="status">Carregando...</p>}
