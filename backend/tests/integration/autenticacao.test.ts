@@ -41,7 +41,7 @@ describe('autenticação da sessão', () => {
       .send({ email: usuario.email, password: 'senhaErrada@123' });
 
     expect(response.status).toBe(401);
-    expect(response.body.error).toBe('E-mail ou senha inválidos');
+    expect(response.body.erro).toBe('E-mail ou senha inválidos');
   });
 
   it('Cenário 3 - login com email inexistente retorna 401', async () => {
@@ -50,7 +50,7 @@ describe('autenticação da sessão', () => {
       .send({ email: 'ninguem@example.test', password: SENHA_VALIDA });
 
     expect(response.status).toBe(401);
-    expect(response.body.error).toBe('E-mail ou senha inválidos');
+    expect(response.body.erro).toBe('E-mail ou senha inválidos');
   });
 
   it('Cenário 4 - login de usuário inativo retorna 403', async () => {
@@ -61,7 +61,7 @@ describe('autenticação da sessão', () => {
       .send({ email: usuario.email, password: SENHA_VALIDA });
 
     expect(response.status).toBe(403);
-    expect(response.body.error).toBe('Usuário inativo');
+    expect(response.body.erro).toBe('Usuário inativo');
   });
 
   it('Cenário 5 - login sem e-mail ou sem senha retorna 400', async () => {
@@ -70,20 +70,28 @@ describe('autenticação da sessão', () => {
       .send({ email: 'usuario@example.test' });
 
     expect(semSenha.status).toBe(400);
-    expect(semSenha.body.error).toBe('Preencha e-mail e senha');
+    expect(semSenha.body.erro).toBe('Preencha e-mail e senha');
 
     const semEmail = await request(createApp())
       .post('/auth/login')
       .send({ password: SENHA_VALIDA });
 
     expect(semEmail.status).toBe(400);
-    expect(semEmail.body.error).toBe('Preencha e-mail e senha');
+    expect(semEmail.body.erro).toBe('Preencha e-mail e senha');
   });
 
   it('Cenário 6 - logout retorna sucesso', async () => {
-    const response = await request(createApp()).post('/auth/logout').send();
+    const usuario = await criarUsuarioComSenha(SENHA_VALIDA);
+    const login = await request(createApp())
+      .post('/auth/login')
+      .send({ email: usuario.email, password: SENHA_VALIDA });
 
-    expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Logout realizado com sucesso');
+    const response = await request(createApp())
+      .post('/auth/logout')
+      .set('Authorization', `Bearer ${login.body.token}`)
+      .send();
+
+    expect(response.status).toBe(204);
+    expect(response.body).toEqual({});
   });
 });

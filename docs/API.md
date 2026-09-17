@@ -119,10 +119,10 @@ Sucesso `204`, sem corpo.
 
 Erros:
 
-- `401`: token ausente, inválido ou expirado.
+- `401`: token ausente, inválido ou expirado, ou já encerrado por um logout anterior.
 
-Compatibilidade atual: o endpoint ainda aceita requisições sem autenticação e devolve `200` com a
-propriedade `message`.
+O token apresentado é registrado como revogado até a data em que expiraria, então não volta a ser
+aceito depois da saída.
 
 ## Usuários
 

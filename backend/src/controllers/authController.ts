@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 import type { User } from '../generated/prisma/client.js';
+import type { AuthRequest } from '../middlewares/auth.js';
+import revokedTokenRepository from '../repositories/revokedTokenRepository.js';
 import userRepository from '../repositories/userRepository.js';
 import { signUserToken } from '../utils/jwtUtils.js';
 
@@ -21,7 +24,7 @@ async function register(req: Request, res: Response) {
 
     if (!name || !email || !password) {
       return res.status(400).json({
-        error: 'Preencha todos os campos',
+        erro: 'Preencha todos os campos',
       });
     }
 
@@ -29,7 +32,7 @@ async function register(req: Request, res: Response) {
 
     if (userExists) {
       return res.status(400).json({
-        error: 'E-mail já cadastrado',
+        erro: 'E-mail já cadastrado',
       });
     }
 
@@ -48,7 +51,7 @@ async function register(req: Request, res: Response) {
     console.error(error);
 
     return res.status(500).json({
-      error: 'Erro ao cadastrar usuário',
+      erro: 'Erro ao cadastrar usuário',
     });
   }
 }
@@ -59,7 +62,7 @@ async function login(req: Request, res: Response) {
 
     if (!email || !password) {
       return res.status(400).json({
-        error: 'Preencha e-mail e senha',
+        erro: 'Preencha e-mail e senha',
       });
     }
 
@@ -67,13 +70,13 @@ async function login(req: Request, res: Response) {
 
     if (!user) {
       return res.status(401).json({
-        error: 'E-mail ou senha inválidos',
+        erro: 'E-mail ou senha inválidos',
       });
     }
 
     if (!user.active) {
       return res.status(403).json({
-        error: 'Usuário inativo',
+        erro: 'Usuário inativo',
       });
     }
 
@@ -81,7 +84,7 @@ async function login(req: Request, res: Response) {
 
     if (!passwordIsValid) {
       return res.status(401).json({
-        error: 'E-mail ou senha inválidos',
+        erro: 'E-mail ou senha inválidos',
       });
     }
 
@@ -95,16 +98,40 @@ async function login(req: Request, res: Response) {
     console.error(error);
 
     return res.status(500).json({
-      error: 'Erro ao fazer login',
+      erro: 'Erro ao fazer login',
     });
   }
 }
 
-async function logout(_req: Request, res: Response) {
-  //essa função ainda não faz nada, somente volta uma mensagem de "logout realizado"
-  return res.status(200).json({
-    message: 'Logout realizado com sucesso',
-  });
+// O token fica na lista de revogados ate a data em que expiraria de qualquer forma.
+// Antes daqui o logout so respondia uma mensagem, e o token seguia valido.
+async function logout(req: Request, res: Response) {
+  const token = (req as AuthRequest).token;
+  const usuarioId = (req as AuthRequest).user?.id;
+
+  if (!token || !usuarioId) {
+    return res.status(401).json({
+      erro: 'Token de autenticação não fornecido.',
+    });
+  }
+
+  try {
+    const decoded = jwt.decode(token);
+    const exp = typeof decoded === 'object' && decoded !== null ? decoded.exp : undefined;
+    const expiresAt = exp ? new Date(exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await revokedTokenRepository.revoke(token, BigInt(usuarioId), expiresAt);
+    // Aproveita a saida para descartar revogações que ja passaram da validade.
+    await revokedTokenRepository.deleteExpired();
+
+    return res.status(204).send();
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      erro: 'Erro ao encerrar a sessão',
+    });
+  }
 }
 
 export default {

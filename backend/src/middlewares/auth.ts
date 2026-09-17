@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
 import { AppError } from '../errors/app-error.js';
+import revokedTokenRepository from '../repositories/revokedTokenRepository.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -16,6 +17,8 @@ export interface AuthUser {
 
 export interface AuthRequest extends Request {
   user?: AuthUser | null;
+  // O token cru fica disponivel para o logout poder revoga-lo.
+  token?: string | null;
 }
 
 interface TokenPayload extends JwtPayload {
@@ -65,7 +68,7 @@ function decodeUser(token: string): AuthUser {
  *   email: string
  * }
  */
-function authenticate(req: AuthRequest, _res: Response, next: NextFunction) {
+async function authenticate(req: AuthRequest, _res: Response, next: NextFunction) {
   const token = extractToken(req);
 
   if (!token) {
@@ -73,12 +76,30 @@ function authenticate(req: AuthRequest, _res: Response, next: NextFunction) {
     return;
   }
 
+  let user: AuthUser;
+
   try {
-    req.user = decodeUser(token);
-    next();
+    user = decodeUser(token);
   } catch {
     next(new AppError(401, 'Token inválido ou expirado.'));
+    return;
   }
+
+  try {
+    // Sem esta conferencia o logout nao encerra nada: o token assinado seguiria
+    // sendo aceito ate expirar, mesmo depois de o usuario sair.
+    if (await revokedTokenRepository.isRevoked(token)) {
+      next(new AppError(401, 'Token inválido ou expirado.'));
+      return;
+    }
+  } catch (error) {
+    next(error);
+    return;
+  }
+
+  req.user = user;
+  req.token = token;
+  next();
 }
 
 /**
