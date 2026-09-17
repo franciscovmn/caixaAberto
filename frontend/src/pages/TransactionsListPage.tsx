@@ -8,6 +8,7 @@ import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
 import { formatarData, formatarMoeda, rotuloTipo, valorComSinal } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
+import { podeEscrever } from '../lib/session';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
@@ -71,6 +72,8 @@ function temFiltroAplicado(filtros: Filtros): boolean {
 
 export function TransactionsListPage() {
   useTituloPagina('Lançamentos');
+
+  const escrita = podeEscrever();
 
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIAIS);
   const [pagina, setPagina] = useState(1);
@@ -151,14 +154,16 @@ export function TransactionsListPage() {
           )}
         </div>
 
-        <div className="acoes">
-          <Link className="acao" to="/lancamentos/entrada">
-            Registrar entrada
-          </Link>
-          <Link className="acao" data-variante="secundario" to="/lancamentos/saida">
-            Registrar saída
-          </Link>
-        </div>
+        {escrita && (
+          <div className="acoes">
+            <Link className="acao" to="/lancamentos/entrada">
+              Registrar entrada
+            </Link>
+            <Link className="acao" data-variante="secundario" to="/lancamentos/saida">
+              Registrar saída
+            </Link>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -248,11 +253,17 @@ export function TransactionsListPage() {
         ) : (
           <EstadoVazio
             titulo="O caixa ainda está vazio"
-            descricao="Nenhum lançamento foi registrado até agora. Comece pela primeira entrada e o extrato passa a se montar sozinho."
+            descricao={
+              escrita
+                ? 'Nenhum lançamento foi registrado até agora. Comece pela primeira entrada e o extrato passa a se montar sozinho.'
+                : 'Nenhum lançamento foi registrado até agora. Assim que a tesouraria registrar o primeiro, ele aparece aqui.'
+            }
             acoes={
-              <Link className="acao" to="/lancamentos/entrada">
-                Registrar entrada
-              </Link>
+              escrita ? (
+                <Link className="acao" to="/lancamentos/entrada">
+                  Registrar entrada
+                </Link>
+              ) : undefined
             }
           />
         ))}

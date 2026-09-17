@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 
+import { podeEscrever } from '../lib/session';
+
 const LINKS = [
   { to: '/lancamentos', rotulo: 'Lançamentos' },
   { to: '/extrato', rotulo: 'Extrato' },
   { to: '/resumo', rotulo: 'Resumo' },
   { to: '/relatorios/categorias', rotulo: 'Relatório' },
-  { to: '/organizacao/link-publico', rotulo: 'Link público' },
+  { to: '/organizacao/link-publico', rotulo: 'Link público', somenteEscrita: true },
 ];
 
 interface AppHeaderProps {
@@ -29,7 +31,7 @@ export function AppHeader({ comNavegacao = false, acoes }: AppHeaderProps) {
 
         {comNavegacao ? (
           <nav className="navegacao" aria-label="Navegação principal">
-            {LINKS.map((link) => (
+            {LINKS.filter((link) => !link.somenteEscrita || podeEscrever()).map((link) => (
               <NavLink key={link.to} to={link.to}>
                 {link.rotulo}
               </NavLink>

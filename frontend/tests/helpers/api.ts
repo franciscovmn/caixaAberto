@@ -52,6 +52,7 @@ export function stubApi(rotas: Rotas) {
   };
 }
 
-export function autenticar() {
+export function autenticar(papel: 'TESOUREIRO' | 'CONSULTOR' = 'TESOUREIRO') {
   localStorage.setItem('caixaAberto.token', 'token-de-teste');
+  localStorage.setItem('caixaAberto.papel', papel);
 }
