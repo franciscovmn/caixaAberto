@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import { EstadoVazio } from '../components/ui/EstadoVazio';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
 import { formatarData, formatarMoeda, rotuloTipo } from '../lib/formato';
+import { hojeISO, primeiroDiaDoMesAtual } from '../lib/data';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
@@ -24,15 +25,6 @@ interface CategoryReportResponse {
     entradas: string;
     saidas: string;
   };
-}
-
-function primeiroDiaDoMesAtual(): string {
-  const hoje = new Date();
-  return new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
-}
-
-function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function CategoryReportPage() {

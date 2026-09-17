@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { AppFooter, AppHeader } from '../components/AppHeader';
 import { EstadoVazio } from '../components/ui/EstadoVazio';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
+import { mesAtual } from '../lib/data';
 import { formatarMoeda, rotuloTipo } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
@@ -34,7 +35,7 @@ function formatarCompetencia(mes: string): string {
 export function PublicTransparencyPage() {
   const { link } = useParams<{ link: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const mesInicial = searchParams.get('mes') ?? new Date().toISOString().slice(0, 7);
+  const mesInicial = searchParams.get('mes') ?? mesAtual();
   const [mes, setMes] = useState(mesInicial);
   const [dados, setDados] = useState<PublicTransparencyResponse | null>(null);
   const [erro, setErro] = useState<string | null>(null);

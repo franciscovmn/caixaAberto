@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { mesAtual } from '../lib/data';
 import { formatarMoeda } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
@@ -15,10 +16,6 @@ interface MonthlySummaryResponse {
     exits: string;
     balance: string;
   };
-}
-
-function mesAtual(): string {
-  return new Date().toISOString().slice(0, 7);
 }
 
 function formatarMes(mes: string): string {

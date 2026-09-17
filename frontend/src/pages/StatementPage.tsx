@@ -5,6 +5,7 @@ import { EstadoVazio } from '../components/ui/EstadoVazio';
 import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
 import { formatarData, formatarMoeda, rotuloTipo, valorComSinal } from '../lib/formato';
+import { hojeISO, primeiroDiaDoMesAtual } from '../lib/data';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
@@ -30,15 +31,6 @@ interface StatementResponse {
 }
 
 const COLUNAS = 5;
-
-function primeiroDiaDoMesAtual(): string {
-  const hoje = new Date();
-  return new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
-}
-
-function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export function StatementPage() {
   useTituloPagina('Extrato');
