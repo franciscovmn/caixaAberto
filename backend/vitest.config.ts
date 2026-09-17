@@ -15,5 +15,12 @@ export default defineConfig({
       './tests/setup/database.ts',
       './tests/setup/uploads.ts',
     ],
+    coverage: {
+      provider: 'v8',
+      // Sem include explicito o relatorio somava o cliente gerado pelo Prisma e os
+      // proprios arquivos de teste, e deixava de fora codigo que nenhum teste importa.
+      include: ['src/**/*.ts'],
+      exclude: ['src/generated/**', 'src/server.ts'],
+    },
   },
 });
