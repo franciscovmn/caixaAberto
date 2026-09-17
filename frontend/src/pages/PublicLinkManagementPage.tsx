@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
@@ -20,8 +20,40 @@ export function PublicLinkManagementPage() {
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
   const [copiando, setCopiando] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
   const urlPublica = useMemo(() => (link ? montarUrlPublica(link.token) : ''), [link]);
+
+  // Sem esta leitura a tela abria sem saber do link existente, e o unico botao
+  // disponivel era o que gera outro token, derrubando o endereco ja distribuido.
+  useEffect(() => {
+    let cancelado = false;
+
+    async function carregar() {
+      try {
+        const atual = await apiRequest<PublicLinkResponse | null>(
+          '/organizacoes/atual/link-publico',
+        );
+        if (!cancelado) setLink(atual?.token ? atual : null);
+      } catch (error) {
+        if (!cancelado) {
+          setErro(
+            error instanceof ApiError
+              ? error.message
+              : 'Não foi possível carregar o link público atual',
+          );
+        }
+      } finally {
+        if (!cancelado) setCarregando(false);
+      }
+    }
+
+    void carregar();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   async function gerarLink() {
     setProcessando(true);
@@ -97,7 +129,7 @@ export function PublicLinkManagementPage() {
         <p>
           Situação:{' '}
           <span className="etiqueta">
-            {link ? (link.ativo ? 'Ativo' : 'Inativo') : 'Não gerado nesta sessão'}
+            {carregando ? 'Carregando' : link ? (link.ativo ? 'Ativo' : 'Inativo') : 'Não gerado'}
           </span>
         </p>
 
@@ -105,11 +137,15 @@ export function PublicLinkManagementPage() {
           <label>
             Endereço público
             <input type="text" value={urlPublica} readOnly />
+            <small>
+              Gerar um novo link troca este endereço, e quem já recebeu o anterior deixa de
+              conseguir abrir a prestação de contas.
+            </small>
           </label>
         )}
 
         <div className="public-link-actions">
-          <button type="button" onClick={gerarLink} disabled={processando}>
+          <button type="button" onClick={gerarLink} disabled={processando || carregando}>
             {link ? 'Gerar novo link' : 'Gerar link público'}
           </button>
 
@@ -117,7 +153,7 @@ export function PublicLinkManagementPage() {
             type="button"
             data-variante="secundario"
             onClick={copiarLink}
-            disabled={!link || copiando}
+            disabled={!link || copiando || carregando}
           >
             {copiando ? 'Copiando...' : 'Copiar'}
           </button>
@@ -126,7 +162,7 @@ export function PublicLinkManagementPage() {
             type="button"
             data-variante="secundario"
             onClick={() => alterarEstado(true)}
-            disabled={!link || link.ativo || processando}
+            disabled={!link || link.ativo || processando || carregando}
           >
             Ativar
           </button>
@@ -135,7 +171,7 @@ export function PublicLinkManagementPage() {
             type="button"
             data-variante="secundario"
             onClick={() => alterarEstado(false)}
-            disabled={!link || !link.ativo || processando}
+            disabled={!link || !link.ativo || processando || carregando}
           >
             Desativar
           </button>

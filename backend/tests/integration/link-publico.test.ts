@@ -259,4 +259,60 @@ describe('link público da organização', () => {
     expect(deactivationResponse.status).toBe(200);
     expect(inactiveResponse.status).toBe(404);
   });
+
+  // Sem leitura, a tela so descobria o link gerando outro, o que invalidava o
+  // endereco ja distribuido a quem acompanha a prestacao de contas.
+  it('Cenário 6 - consultar o link vigente sem regenerá-lo', async () => {
+    const user = await createUser();
+    const organization = await createOrganization({
+      publicLink: 'token-existente',
+      transparencyActive: true,
+    });
+    await createMembership({ userId: user.id, organizationId: organization.id });
+
+    const response = await request(createApp())
+      .get('/organizacoes/atual/link-publico')
+      .set('Authorization', createAuthorizationHeader(user));
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ token: 'token-existente', ativo: true });
+
+    const persistedOrganization = await prisma.organization.findUniqueOrThrow({
+      where: { id: organization.id },
+    });
+
+    expect(persistedOrganization.publicLink).toBe('token-existente');
+  });
+
+  it('Cenário 7 - consultar quando ainda não há link devolve nulo', async () => {
+    const user = await createUser();
+    const organization = await createOrganization();
+    await createMembership({ userId: user.id, organizationId: organization.id });
+
+    const response = await request(createApp())
+      .get('/organizacoes/atual/link-publico')
+      .set('Authorization', createAuthorizationHeader(user));
+
+    expect(response.status).toBe(200);
+    expect(response.body).toBeNull();
+  });
+
+  it('Cenário 8 - consulta do link exige papel TESOUREIRO', async () => {
+    const user = await createUser();
+    const organization = await createOrganization({
+      publicLink: 'token-existente',
+      transparencyActive: true,
+    });
+    await createMembership({
+      userId: user.id,
+      organizationId: organization.id,
+      role: 'CONSULTOR',
+    });
+
+    const response = await request(createApp())
+      .get('/organizacoes/atual/link-publico')
+      .set('Authorization', createAuthorizationHeader(user));
+
+    expect(response.status).toBe(403);
+  });
 });

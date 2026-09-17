@@ -457,6 +457,30 @@ Compatibilidade atual: responde em `GET /transactions/resumo/mensal` e devolve `
 
 ## Transparência pública
 
+### `GET /organizacoes/atual/link-publico`
+
+Exige autenticação e papel `TESOUREIRO`.
+
+Sucesso `200` com o link vigente:
+
+```json
+{
+  "token": "string",
+  "ativo": true
+}
+```
+
+Quando a organização ainda não tem link gerado, responde `200` com `null`. A ausência de link é um
+estado normal da organização, e não um erro.
+
+A consulta não altera o token. Gerar um link novo troca o endereço e derruba o anterior, então a
+leitura existe para que a tela mostre o link atual sem precisar substituí-lo.
+
+Erros:
+
+- `401`: token ausente, inválido ou expirado.
+- `403`: papel diferente de `TESOUREIRO`.
+
 ### `POST /organizacoes/atual/link-publico`
 
 Exige autenticação e papel `TESOUREIRO`. Gera ou regenera token aleatório de pelo menos 32 bytes e

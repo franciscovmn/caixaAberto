@@ -36,7 +36,9 @@ export function stubApi(rotas: Rotas) {
       : { status: 404, body: { erro: 'Rota nao configurada' } };
     const status = resposta.status ?? 200;
 
-    return new Response(JSON.stringify(resposta.body ?? {}), {
+    const corpoResposta = 'body' in resposta ? resposta.body : {};
+
+    return new Response(JSON.stringify(corpoResposta), {
       status,
       headers: { 'Content-Type': 'application/json' },
     });
