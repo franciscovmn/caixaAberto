@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 
 import { apiRequest } from '../lib/httpClient';
 import { clearSession, isAuthenticated } from '../lib/session';
+import { AppFooter, AppHeader } from './AppHeader';
 
 export function ProtectedRoute() {
   const navigate = useNavigate();
@@ -29,18 +30,18 @@ export function ProtectedRoute() {
 
   return (
     <>
-      <header>
-        <nav aria-label="Navegação principal">
-          <Link to="/lancamentos">Lançamentos</Link>
-          <Link to="/organizacao/link-publico">Link público</Link>
-        </nav>
-
-        <button type="button" onClick={handleLogout} disabled={saindo}>
-          {saindo ? 'Saindo...' : 'Sair'}
-        </button>
-      </header>
+      <AppHeader
+        comNavegacao
+        acoes={
+          <button type="button" data-variante="quieto" onClick={handleLogout} disabled={saindo}>
+            {saindo ? 'Saindo...' : 'Sair'}
+          </button>
+        }
+      />
 
       <Outlet />
+
+      <AppFooter />
     </>
   );
 }

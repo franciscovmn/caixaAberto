@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 
 import type { User } from '../generated/prisma/client.js';
+import { getContexto } from '../middlewares/load-context.js';
 import userRepository from '../repositories/userRepository.js';
 
 function serializeUser(user: User) {
@@ -14,16 +15,17 @@ function serializeUser(user: User) {
   };
 }
 
-async function getUsers(_req: Request, res: Response) {
+async function getUsers(req: Request, res: Response) {
   try {
-    const users = await userRepository.findAll();
+    const { organizacaoId } = getContexto(req);
+    const users = await userRepository.findAllByOrganization(organizacaoId);
 
     return res.json(users.map(serializeUser));
   } catch (error) {
     console.error(error);
 
     return res.status(500).json({
-      error: 'Erro ao buscar usuários',
+      erro: 'Erro ao buscar usuários',
     });
   }
 }
@@ -34,7 +36,7 @@ async function getUserById(req: Request, res: Response) {
 
     if (!idParam || Array.isArray(idParam)) {
       return res.status(400).json({
-        error: 'ID de usuário inválido',
+        erro: 'ID de usuário inválido',
       });
     }
 
@@ -42,11 +44,11 @@ async function getUserById(req: Request, res: Response) {
 
     //const id = BigInt(req.params.id)
 
-    const user = await userRepository.findById(id);
+    const user = await userRepository.findByIdInOrganization(id, getContexto(req).organizacaoId);
 
     if (!user) {
       return res.status(404).json({
-        error: 'Usuário não encontrado',
+        erro: 'Usuário não encontrado',
       });
     }
 
@@ -55,7 +57,7 @@ async function getUserById(req: Request, res: Response) {
     console.error(error);
 
     return res.status(400).json({
-      error: 'ID de usuário inválido',
+      erro: 'ID de usuário inválido',
     });
   }
 }
@@ -66,7 +68,7 @@ async function createUser(req: Request, res: Response) {
 
     if (!name || !email || !password) {
       return res.status(400).json({
-        error: 'Nome, e-mail e senha são obrigatórios',
+        erro: 'Nome, e-mail e senha são obrigatórios',
       });
     }
 
@@ -74,7 +76,7 @@ async function createUser(req: Request, res: Response) {
 
     if (existingUser) {
       return res.status(400).json({
-        error: 'E-mail já cadastrado',
+        erro: 'E-mail já cadastrado',
       });
     }
 
@@ -92,7 +94,7 @@ async function createUser(req: Request, res: Response) {
     console.error(error);
 
     return res.status(500).json({
-      error: 'Erro ao criar usuário',
+      erro: 'Erro ao criar usuário',
     });
   }
 }
@@ -103,7 +105,7 @@ async function updateUser(req: Request, res: Response) {
 
     if (!idParam || Array.isArray(idParam)) {
       return res.status(400).json({
-        error: 'ID de usuário inválido',
+        erro: 'ID de usuário inválido',
       });
     }
 
@@ -113,11 +115,14 @@ async function updateUser(req: Request, res: Response) {
 
     const { name, email, password, active } = req.body;
 
-    const existingUser = await userRepository.findById(id);
+    const existingUser = await userRepository.findByIdInOrganization(
+      id,
+      getContexto(req).organizacaoId,
+    );
 
     if (!existingUser) {
       return res.status(404).json({
-        error: 'Usuário não encontrado',
+        erro: 'Usuário não encontrado',
       });
     }
 
@@ -126,7 +131,7 @@ async function updateUser(req: Request, res: Response) {
 
       if (emailInUse) {
         return res.status(400).json({
-          error: 'E-mail já cadastrado',
+          erro: 'E-mail já cadastrado',
         });
       }
     }
@@ -161,7 +166,7 @@ async function updateUser(req: Request, res: Response) {
     console.error(error);
 
     return res.status(400).json({
-      error: 'Erro ao atualizar usuário',
+      erro: 'Erro ao atualizar usuário',
     });
   }
 }
@@ -172,7 +177,7 @@ async function deleteUser(req: Request, res: Response) {
 
     if (!idParam || Array.isArray(idParam)) {
       return res.status(400).json({
-        error: 'ID de usuário inválido',
+        erro: 'ID de usuário inválido',
       });
     }
 
@@ -180,11 +185,14 @@ async function deleteUser(req: Request, res: Response) {
 
     //const id = BigInt(req.params.id)
 
-    const existingUser = await userRepository.findById(id);
+    const existingUser = await userRepository.findByIdInOrganization(
+      id,
+      getContexto(req).organizacaoId,
+    );
 
     if (!existingUser) {
       return res.status(404).json({
-        error: 'Usuário não encontrado',
+        erro: 'Usuário não encontrado',
       });
     }
 
@@ -195,7 +203,7 @@ async function deleteUser(req: Request, res: Response) {
     console.error(error);
 
     return res.status(400).json({
-      error: 'Não foi possível excluir o usuário',
+      erro: 'Não foi possível excluir o usuário',
     });
   }
 }

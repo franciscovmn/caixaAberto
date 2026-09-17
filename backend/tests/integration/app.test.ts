@@ -75,3 +75,16 @@ describe('estrutura da suíte de testes', () => {
     expect(meiaNoiteUtc.getDate()).not.toBe(meiaNoiteUtc.getUTCDate());
   });
 });
+
+describe('corpo malformado', () => {
+  // O SyntaxError do express.json() caia no fallback do tratador e virava 500.
+  it('responde 400 quando o corpo não é JSON válido', async () => {
+    const response = await request(createApp())
+      .post('/auth/login')
+      .set('Content-Type', 'application/json')
+      .send('{"email": "ana@exemplo.com", quebrado');
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ erro: 'Corpo da requisição não é um JSON válido' });
+  });
+});

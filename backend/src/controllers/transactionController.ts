@@ -19,14 +19,21 @@ function parseBigInt(value: unknown): bigint | null {
 function parseDateOnly(value: unknown): Date | null {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null; // valida datas no formato YYYY-MM-DD
   const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (Number.isNaN(date.getTime())) return null;
+  // O construtor aceita dia inexistente e rola para o mes seguinte, entao a data so e
+  // valida se voltar exatamente igual ao que foi informado.
+  return date.toISOString().slice(0, 10) === value ? date : null;
 }
+
+// Teto da coluna valor, DECIMAL(12,2). Sem esta checagem o insert falhava no banco e a
+// entrada do usuario terminava como erro 500.
+const VALOR_MAXIMO = new Prisma.Decimal('9999999999.99');
 
 function parseMoney(value: unknown): Prisma.Decimal | null {
   try {
     if (value === null || value === undefined || value === '') return null;
     const decimal = new Prisma.Decimal(String(value));
-    if (!decimal.isFinite() || decimal.lte(0)) return null;
+    if (!decimal.isFinite() || decimal.lte(0) || decimal.gt(VALOR_MAXIMO)) return null;
     return decimal;
   } catch {
     return null;
@@ -63,7 +70,7 @@ async function create(req: Request, res: Response, forcedType: TransactionType) 
 
     if (!categoryId || !amount || !date || !description) {
       return res.status(400).json({
-        error: 'categoryId, amount, date e description são obrigatórios e válidos.',
+        erro: 'categoryId, amount, date e description são obrigatórios e válidos.',
       });
     }
 
@@ -74,19 +81,19 @@ async function create(req: Request, res: Response, forcedType: TransactionType) 
     ) {
       return res
         .status(400)
-        .json({ error: 'description deve ser um texto entre 1 e 5000 caracteres.' });
+        .json({ erro: 'description deve ser um texto entre 1 e 5000 caracteres.' });
     }
 
     if (source !== undefined && source !== null && typeof source !== 'string') {
-      return res.status(400).json({ error: 'source deve ser texto.' });
+      return res.status(400).json({ erro: 'source deve ser texto.' });
     }
 
     if (recipient !== undefined && recipient !== null && typeof recipient !== 'string') {
-      return res.status(400).json({ error: 'recipient deve ser texto.' });
+      return res.status(400).json({ erro: 'recipient deve ser texto.' });
     }
 
     const organization = await transactionRepository.getOrganizationById(organizationId);
-    if (!organization) return res.status(404).json({ error: 'Organização não encontrada.' });
+    if (!organization) return res.status(404).json({ erro: 'Organização não encontrada.' });
 
     if (
       !organization.managementStart ||
@@ -94,7 +101,7 @@ async function create(req: Request, res: Response, forcedType: TransactionType) 
       date > organization.managementEnd
     ) {
       return res.status(400).json({
-        error: 'A data do lançamento deve estar dentro do período de gestão da organização.',
+        erro: 'A data do lançamento deve estar dentro do período de gestão da organização.',
       });
     }
 
@@ -106,7 +113,7 @@ async function create(req: Request, res: Response, forcedType: TransactionType) 
 
     if (!category) {
       return res.status(400).json({
-        error: 'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
+        erro: 'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
       });
     }
 
@@ -127,7 +134,7 @@ async function create(req: Request, res: Response, forcedType: TransactionType) 
     return res.status(201).json(serialize(transaction));
   } catch (error) {
     console.error(`[create ${forcedType.toLowerCase()}]`, error);
-    return res.status(500).json({ error: 'Erro interno ao registrar lançamento.' });
+    return res.status(500).json({ erro: 'Erro interno ao registrar lançamento.' });
   }
 }
 
@@ -136,7 +143,7 @@ export async function createTransaction(req: Request, res: Response) {
 
   if (!TRANSACTION_TYPES.includes(requestedType as TransactionType)) {
     return res.status(400).json({
-      error: 'tipo deve ser ENTRADA ou SAIDA.',
+      erro: 'tipo deve ser ENTRADA ou SAIDA.',
     });
   }
 
@@ -157,15 +164,15 @@ export async function getOne(req: Request, res: Response) {
     const { organizacaoId: organizationId } = getContexto(req);
 
     const id = parseBigInt(req.params.id);
-    if (!id) return res.status(400).json({ error: 'id é obrigatório.' });
+    if (!id) return res.status(400).json({ erro: 'id é obrigatório.' });
 
     const transaction = await transactionRepository.findTransactionById(id, organizationId);
-    if (!transaction) return res.status(404).json({ error: 'Lançamento não encontrado.' });
+    if (!transaction) return res.status(404).json({ erro: 'Lançamento não encontrado.' });
 
     return res.json(serialize(transaction));
   } catch (error) {
     console.error('[get transaction]', error);
-    return res.status(500).json({ error: 'Erro interno ao buscar lançamento.' });
+    return res.status(500).json({ erro: 'Erro interno ao buscar lançamento.' });
   }
 }
 
@@ -207,7 +214,7 @@ export async function monthlySummary(req: Request, res: Response) {
     const { organizacaoId: organizationId } = getContexto(req);
 
     const range = getMonthRange(typeof req.query.mes === 'string' ? req.query.mes : undefined);
-    if (!range) return res.status(400).json({ error: 'mes deve estar no formato YYYY-MM.' });
+    if (!range) return res.status(400).json({ erro: 'mes deve estar no formato YYYY-MM.' });
 
     const [currentGroups, previousGroups] = await Promise.all([
       transactionRepository.getMonthlySummary(organizationId, range.start, range.end),
@@ -239,24 +246,24 @@ export async function monthlySummary(req: Request, res: Response) {
     });
   } catch (error) {
     console.error('[monthly summary]', error);
-    return res.status(500).json({ error: 'Erro interno ao consultar resumo financeiro mensal.' });
+    return res.status(500).json({ erro: 'Erro interno ao consultar resumo financeiro mensal.' });
   }
 }
 
 export async function publicTransparency(req: Request, res: Response) {
   try {
     const publicLink = String(req.params.publicLink ?? '').trim();
-    if (!publicLink) return res.status(400).json({ error: 'Link público é obrigatório.' });
+    if (!publicLink) return res.status(400).json({ erro: 'Link público é obrigatório.' });
 
     const organization = await transactionRepository.getPublicOrganizationByLink(publicLink);
     if (!organization) {
       return res
         .status(404)
-        .json({ error: 'Página de transparência não encontrada ou desativada.' });
+        .json({ erro: 'Página de transparência não encontrada ou desativada.' });
     }
 
     const range = getMonthRange(typeof req.query.mes === 'string' ? req.query.mes : undefined);
-    if (!range) return res.status(400).json({ error: 'mes deve estar no formato YYYY-MM.' });
+    if (!range) return res.status(400).json({ erro: 'mes deve estar no formato YYYY-MM.' });
 
     const groups = await transactionRepository.getPublicMonthlyAggregates(
       organization.id,
@@ -307,6 +314,6 @@ export async function publicTransparency(req: Request, res: Response) {
     });
   } catch (error) {
     console.error('[public transparency]', error);
-    return res.status(500).json({ error: 'Erro interno ao consultar transparência.' });
+    return res.status(500).json({ erro: 'Erro interno ao consultar transparência.' });
   }
 }

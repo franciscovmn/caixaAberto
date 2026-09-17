@@ -125,7 +125,7 @@ describe('detalhe do lançamento (US24)', () => {
       .set('Authorization', authorization);
 
     expect(response.status).toBe(404);
-    expect(response.body).toEqual({ error: 'Lançamento não encontrado.' });
+    expect(response.body).toEqual({ erro: 'Lançamento não encontrado.' });
   });
 
   it('Cenário 4 - ID inválido retorna 400', async () => {
@@ -136,7 +136,7 @@ describe('detalhe do lançamento (US24)', () => {
       .set('Authorization', authorization);
 
     expect(response.status).toBe(400);
-    expect(response.body).toEqual({ error: 'id é obrigatório.' });
+    expect(response.body).toEqual({ erro: 'id é obrigatório.' });
   });
 
   it('Cenário 5 - consultor da organização pode consultar o detalhe', async () => {

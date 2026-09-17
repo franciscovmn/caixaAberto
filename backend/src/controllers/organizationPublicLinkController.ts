@@ -10,6 +10,21 @@ const changePublicLinkStateSchema = z
   })
   .strict();
 
+// Devolve 200 com o link vigente, ou 200 com null quando ainda nao existe. Nao e 404
+// porque a ausencia de link e um estado normal da organizacao, nao um erro.
+export async function getPublicLink(
+  request: Request,
+  response: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const result = await publicLinkService.readPublicLink(getContexto(request).organizacaoId);
+    response.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function generatePublicLink(
   request: Request,
   response: Response,

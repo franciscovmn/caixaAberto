@@ -101,7 +101,7 @@ describe('registro de saída financeira (US19)', () => {
       });
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBe(
+    expect(response.body.erro).toBe(
       'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
     );
   });
@@ -127,7 +127,7 @@ describe('registro de saída financeira (US19)', () => {
       });
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBe(
+    expect(response.body.erro).toBe(
       'Categoria não encontrada, inativa ou incompatível com o tipo do lançamento.',
     );
   });

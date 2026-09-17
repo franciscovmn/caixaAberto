@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -23,6 +25,9 @@ function signUserToken(user: UserForToken): string {
     throw new Error('JWT_SECRET não configurado');
   }
 
+  // O jti torna cada token unico. Sem ele, dois logins do mesmo usuario dentro do
+  // mesmo segundo produzem a mesma string assinada, e a revogacao de uma sessao
+  // derrubaria a outra por engano.
   return jwt.sign(
     {
       email: user.email,
@@ -31,6 +36,7 @@ function signUserToken(user: UserForToken): string {
     {
       subject: user.id.toString(),
       expiresIn: '1d',
+      jwtid: randomUUID(),
     },
   );
 }

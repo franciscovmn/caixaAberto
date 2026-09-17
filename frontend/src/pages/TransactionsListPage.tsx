@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
-import { formatarMoeda } from '../lib/formato';
+import { EstadoVazio } from '../components/ui/EstadoVazio';
+import { IconeComprovante } from '../components/ui/IconeComprovante';
+import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
+import { TabelaRolavel } from '../components/ui/TabelaRolavel';
+import { formatarData, formatarMoeda, rotuloTipo, valorComSinal } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
+import { podeEscrever } from '../lib/session';
+import { useTituloPagina } from '../lib/useTituloPagina';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
 
@@ -46,6 +52,8 @@ const FILTROS_INICIAIS: Filtros = {
   categoriaId: '',
 };
 
+const COLUNAS = 6;
+
 function montarQueryString(filtros: Filtros, pagina: number): string {
   const params = new URLSearchParams();
 
@@ -58,7 +66,15 @@ function montarQueryString(filtros: Filtros, pagina: number): string {
   return params.toString();
 }
 
+function temFiltroAplicado(filtros: Filtros): boolean {
+  return Boolean(filtros.dataInicio || filtros.dataFim || filtros.tipo || filtros.categoriaId);
+}
+
 export function TransactionsListPage() {
+  useTituloPagina('Lançamentos');
+
+  const escrita = podeEscrever();
+
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIAIS);
   const [pagina, setPagina] = useState(1);
   const [resultado, setResultado] = useState<TransactionListResponse | null>(null);
@@ -117,117 +133,225 @@ export function TransactionsListPage() {
     setPagina(1);
   }
 
+  function limparFiltros() {
+    setFiltros(FILTROS_INICIAIS);
+    setPagina(1);
+  }
+
+  const semResultados = Boolean(resultado && resultado.dados.length === 0 && !carregando);
+  const mostrarTabela = carregando || Boolean(resultado && resultado.dados.length > 0);
+
   return (
-    <main>
-      <h1>Lançamentos</h1>
+    <main data-largura="ampla">
+      <div className="cabecalho-pagina">
+        <div>
+          <h1>Lançamentos</h1>
+          {resultado && (
+            <p className="cabecalho-pagina__apoio">
+              {resultado.paginacao.total}{' '}
+              {resultado.paginacao.total === 1 ? 'lançamento' : 'lançamentos'} no período
+            </p>
+          )}
+        </div>
+
+        {escrita && (
+          <div className="acoes">
+            <Link className="acao" to="/lancamentos/entrada">
+              Registrar entrada
+            </Link>
+            <Link className="acao" data-variante="secundario" to="/lancamentos/saida">
+              Registrar saída
+            </Link>
+          </div>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit}>
-        <label>
-          De
-          <input
-            type="date"
-            value={filtros.dataInicio}
-            onChange={(event) =>
-              setFiltros((atual) => ({ ...atual, dataInicio: event.target.value }))
-            }
-          />
-        </label>
+        <fieldset className="filtros">
+          <legend>Filtrar</legend>
 
-        <label>
-          Até
-          <input
-            type="date"
-            value={filtros.dataFim}
-            onChange={(event) => setFiltros((atual) => ({ ...atual, dataFim: event.target.value }))}
-          />
-        </label>
+          <div className="filtros__campos">
+            <label>
+              De
+              <input
+                type="date"
+                value={filtros.dataInicio}
+                onChange={(event) =>
+                  setFiltros((atual) => ({ ...atual, dataInicio: event.target.value }))
+                }
+              />
+            </label>
 
-        <label>
-          Tipo
-          <select
-            value={filtros.tipo}
-            onChange={(event) =>
-              setFiltros((atual) => ({
-                ...atual,
-                tipo: event.target.value as Filtros['tipo'],
-              }))
-            }
-          >
-            <option value="">Todos</option>
-            <option value="ENTRADA">Entrada</option>
-            <option value="SAIDA">Saída</option>
-          </select>
-        </label>
+            <label>
+              Até
+              <input
+                type="date"
+                value={filtros.dataFim}
+                onChange={(event) =>
+                  setFiltros((atual) => ({ ...atual, dataFim: event.target.value }))
+                }
+              />
+            </label>
 
-        <label>
-          Categoria
-          <select
-            value={filtros.categoriaId}
-            onChange={(event) =>
-              setFiltros((atual) => ({ ...atual, categoriaId: event.target.value }))
-            }
-          >
-            <option value="">Todas</option>
-            {categorias.map((categoria) => (
-              <option key={categoria.id} value={categoria.id}>
-                {categoria.nome}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label>
+              Tipo
+              <select
+                value={filtros.tipo}
+                onChange={(event) =>
+                  setFiltros((atual) => ({
+                    ...atual,
+                    tipo: event.target.value as Filtros['tipo'],
+                  }))
+                }
+              >
+                <option value="">Todos</option>
+                <option value="ENTRADA">Entrada</option>
+                <option value="SAIDA">Saída</option>
+              </select>
+            </label>
 
-        <button type="submit">Filtrar</button>
+            <label>
+              Categoria
+              <select
+                value={filtros.categoriaId}
+                onChange={(event) =>
+                  setFiltros((atual) => ({ ...atual, categoriaId: event.target.value }))
+                }
+              >
+                <option value="">Todas</option>
+                {categorias.map((categoria) => (
+                  <option key={categoria.id} value={categoria.id}>
+                    {categoria.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button type="submit">Filtrar</button>
+          </div>
+        </fieldset>
       </form>
 
-      {carregando && <p role="status">Carregando...</p>}
+      {carregando && (
+        <p role="status" className="apenas-leitor">
+          Carregando lançamentos
+        </p>
+      )}
       {erro && <p role="alert">{erro}</p>}
 
-      {resultado && resultado.dados.length === 0 && !carregando && (
-        <p>Nenhum lançamento encontrado para os filtros informados.</p>
-      )}
+      {semResultados &&
+        (temFiltroAplicado(filtros) ? (
+          <EstadoVazio
+            titulo="Nenhum lançamento no período"
+            descricao="Os filtros aplicados não encontraram movimentações. Amplie o período ou limpe os filtros para ver a trilha completa."
+            acoes={
+              <button type="button" data-variante="secundario" onClick={limparFiltros}>
+                Limpar filtros
+              </button>
+            }
+          />
+        ) : (
+          <EstadoVazio
+            titulo="O caixa ainda está vazio"
+            descricao={
+              escrita
+                ? 'Nenhum lançamento foi registrado até agora. Comece pela primeira entrada e o extrato passa a se montar sozinho.'
+                : 'Nenhum lançamento foi registrado até agora. Assim que a tesouraria registrar o primeiro, ele aparece aqui.'
+            }
+            acoes={
+              escrita ? (
+                <Link className="acao" to="/lancamentos/entrada">
+                  Registrar entrada
+                </Link>
+              ) : undefined
+            }
+          />
+        ))}
 
-      {resultado && resultado.dados.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Valor</th>
-              <th>Tipo</th>
-              <th>Status</th>
-              <th>Comprovante</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {resultado.dados.map((lancamento) => (
-              <tr key={lancamento.id}>
-                <td>{lancamento.data}</td>
-                <td>{lancamento.descricao}</td>
-                <td>{lancamento.categoria.nome}</td>
-                <td>{formatarMoeda(lancamento.valor)}</td>
-                <td>{lancamento.tipo}</td>
-                <td>{lancamento.status}</td>
-                <td>{lancamento.possuiComprovante ? 'Sim' : 'Não'}</td>
-                <td>
-                  <Link to={`/lancamentos/${lancamento.id}`}>Ver detalhes</Link>
-                </td>
+      {mostrarTabela && (
+        <TabelaRolavel titulo="Lançamentos">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th data-alinha="direita">Valor</th>
+                <th data-alinha="centro">
+                  <span className="apenas-leitor">Comprovante</span>
+                  <span aria-hidden="true">Comp.</span>
+                </th>
+                <th>
+                  <span className="apenas-leitor">Ações</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            {carregando && <TabelaEsqueleto colunas={COLUNAS} />}
+
+            {!carregando && resultado && (
+              <tbody>
+                {resultado.dados.map((lancamento) => (
+                  <tr
+                    key={lancamento.id}
+                    className={lancamento.status === 'ESTORNADO' ? 'linha--estornada' : undefined}
+                  >
+                    <td>{formatarData(lancamento.data)}</td>
+                    <td data-coluna="texto">
+                      {lancamento.descricao}{' '}
+                      {lancamento.status === 'ESTORNADO' && (
+                        <span className="etiqueta etiqueta--estornado">Estornado</span>
+                      )}
+                    </td>
+                    <td data-coluna="texto">{lancamento.categoria.nome}</td>
+                    <td data-alinha="direita">
+                      <span
+                        className={`valor valor--${lancamento.tipo.toLowerCase()}`}
+                        aria-label={`${rotuloTipo(lancamento.tipo)} de ${formatarMoeda(lancamento.valor)}`}
+                      >
+                        {valorComSinal(lancamento.tipo, lancamento.valor)}
+                      </span>
+                    </td>
+                    <td data-alinha="centro">
+                      {lancamento.possuiComprovante ? (
+                        <>
+                          <IconeComprovante />
+                          <span className="apenas-leitor">Possui comprovante</span>
+                        </>
+                      ) : (
+                        <span className="apenas-leitor">Sem comprovante</span>
+                      )}
+                    </td>
+                    <td data-coluna="acao">
+                      <Link
+                        to={`/lancamentos/${lancamento.id}`}
+                        aria-label={`Ver detalhes de ${lancamento.descricao}`}
+                      >
+                        Ver detalhes
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
+          </table>
+        </TabelaRolavel>
       )}
 
       {resultado && resultado.paginacao.totalPaginas > 1 && (
-        <nav>
-          <button disabled={pagina <= 1} onClick={() => setPagina((atual) => atual - 1)}>
+        <nav aria-label="Paginação">
+          <button
+            data-variante="secundario"
+            disabled={pagina <= 1}
+            onClick={() => setPagina((atual) => atual - 1)}
+          >
             Anterior
           </button>
           <span>
             Página {resultado.paginacao.pagina} de {resultado.paginacao.totalPaginas}
           </span>
           <button
+            data-variante="secundario"
             disabled={pagina >= resultado.paginacao.totalPaginas}
             onClick={() => setPagina((atual) => atual + 1)}
           >
@@ -235,12 +359,6 @@ export function TransactionsListPage() {
           </button>
         </nav>
       )}
-
-      <Link to="/lancamentos/entrada">Registrar entrada</Link>
-      <br />
-      <Link to="/lancamentos/saida">Registrar saída</Link>
-      <br />
-      <Link to="/relatorios/categorias">Relatório por categoria</Link>
     </main>
   );
 }

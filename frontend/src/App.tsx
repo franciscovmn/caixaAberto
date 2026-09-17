@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RotaTesoureiro } from './components/RotaTesoureiro';
 import { CategoryReportPage } from './pages/CategoryReportPage';
 import { LoginPage } from './pages/LoginPage';
 import { MonthlySummaryPage } from './pages/MonthlySummaryPage';
@@ -20,13 +21,17 @@ export function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route path="/lancamentos" element={<TransactionsListPage />} />
-        <Route path="/lancamentos/entrada" element={<NewInflowPage />} />
-        <Route path="/lancamentos/saida" element={<NewOutflowPage />} />
+
+        <Route element={<RotaTesoureiro />}>
+          <Route path="/lancamentos/entrada" element={<NewInflowPage />} />
+          <Route path="/lancamentos/saida" element={<NewOutflowPage />} />
+          <Route path="/organizacao/link-publico" element={<PublicLinkManagementPage />} />
+        </Route>
+
         <Route path="/lancamentos/:id" element={<TransactionDetailPage />} />
         <Route path="/resumo" element={<MonthlySummaryPage />} />
         <Route path="/extrato" element={<StatementPage />} />
         <Route path="/relatorios/categorias" element={<CategoryReportPage />} />
-        <Route path="/organizacao/link-publico" element={<PublicLinkManagementPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/lancamentos" replace />} />

@@ -102,7 +102,7 @@ describe('transparência pública (US32)', () => {
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({
-      error: 'Página de transparência não encontrada ou desativada.',
+      erro: 'Página de transparência não encontrada ou desativada.',
     });
   });
 
@@ -113,7 +113,7 @@ describe('transparência pública (US32)', () => {
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({
-      error: 'Página de transparência não encontrada ou desativada.',
+      erro: 'Página de transparência não encontrada ou desativada.',
     });
   });
 
@@ -223,6 +223,6 @@ describe('transparência pública (US32)', () => {
       .query({ mes: '2026-13' });
 
     expect(response.status).toBe(400);
-    expect(response.body).toEqual({ error: 'mes deve estar no formato YYYY-MM.' });
+    expect(response.body).toEqual({ erro: 'mes deve estar no formato YYYY-MM.' });
   });
 });

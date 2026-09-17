@@ -114,6 +114,26 @@ Unicidade: (`organizacao_id`, `nome`, `tipo`).
 
 Índice: `organizacao_id`.
 
+### `TOKEN_REVOGADO`
+
+| Coluna           | Tipo           | Nulo | Default/constraint                   |
+| ---------------- | -------------- | ---- | ------------------------------------ |
+| `id`             | `BIGINT`       | não  | identity, PK                         |
+| `hash_token`     | `VARCHAR(64)`  | não  | único, SHA-256 hexadecimal           |
+| `usuario_id`     | `BIGINT`       | não  | FK `USUARIO.id`, `ON DELETE CASCADE` |
+| `expira_em`      | `TIMESTAMP(6)` | não  | `exp` do token revogado              |
+| `data_revogacao` | `TIMESTAMP(6)` | não  | sem default                          |
+
+Índice: `expira_em`.
+
+Guarda as sessões encerradas antes da expiração natural do token. O logout grava o hash do token
+apresentado, e a autenticação recusa qualquer token que conste aqui. Só o hash é persistido, nunca
+o token. As linhas cujo `expira_em` já passou são descartadas no logout seguinte, porque a partir
+daí o token seria recusado pela própria expiração.
+
+Esta é a única tabela com `ON DELETE CASCADE`. As demais usam `RESTRICT`, que protege histórico
+financeiro; aqui o dado é derivado da sessão e não deve impedir a exclusão de um usuário.
+
 ## Valores controlados
 
 | Campo               | Valores aceitos           |

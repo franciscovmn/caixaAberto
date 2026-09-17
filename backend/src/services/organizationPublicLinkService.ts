@@ -39,6 +39,21 @@ export async function generateAndActivatePublicLink(
   throw new Error('Não foi possível gerar um token público único');
 }
 
+// Sem leitura, a tela nao tinha como mostrar o link vigente e o unico caminho para
+// descobri-lo era gerar outro, o que derruba o endereco ja distribuido.
+export async function readPublicLink(organizationId: bigint): Promise<PublicLinkResponse | null> {
+  const currentState = await publicLinkRepository.findPublicLinkState(organizationId);
+
+  if (!currentState?.publicLink) {
+    return null;
+  }
+
+  return {
+    token: currentState.publicLink,
+    ativo: currentState.transparencyActive,
+  };
+}
+
 export async function changePublicLinkState(
   organizationId: bigint,
   active: boolean,

@@ -6,5 +6,12 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      // Sem include explicito o relatorio so contava arquivo que algum teste importava,
+      // e paginas sem teste nenhum ficavam fora da conta em vez de aparecer com zero.
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/main.tsx', 'src/vite-env.d.ts'],
+    },
   },
 });

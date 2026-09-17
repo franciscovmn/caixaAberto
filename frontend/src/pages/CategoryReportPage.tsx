@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { formatarMoeda } from '../lib/formato';
+import { EstadoVazio } from '../components/ui/EstadoVazio';
+import { TabelaRolavel } from '../components/ui/TabelaRolavel';
+import { formatarData, formatarMoeda, rotuloTipo } from '../lib/formato';
+import { hojeISO, primeiroDiaDoMesAtual } from '../lib/data';
 import { ApiError, apiRequest } from '../lib/httpClient';
+import { useTituloPagina } from '../lib/useTituloPagina';
 
 type CategoryType = 'ENTRADA' | 'SAIDA';
 
@@ -23,20 +27,9 @@ interface CategoryReportResponse {
   };
 }
 
-function primeiroDiaDoMesAtual(): string {
-  const hoje = new Date();
-  return new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
-}
-
-function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function rotuloTipo(tipo: CategoryType): string {
-  return tipo === 'ENTRADA' ? 'Entrada' : 'Saída';
-}
-
 export function CategoryReportPage() {
+  useTituloPagina('Relatório por categoria');
+
   const [dataInicio, setDataInicio] = useState(primeiroDiaDoMesAtual());
   const [dataFim, setDataFim] = useState(hojeISO());
   const [periodoConsultado, setPeriodoConsultado] = useState({
@@ -109,52 +102,85 @@ export function CategoryReportPage() {
     setPeriodoConsultado({ dataInicio, dataFim });
   }
 
+  const saldo = relatorio
+    ? String(Number(relatorio.totais.entradas) - Number(relatorio.totais.saidas))
+    : '0';
+
   return (
-    <main>
-      <h1>Relatório por categoria</h1>
+    <main data-largura="ampla">
+      <div className="cabecalho-pagina">
+        <div>
+          <h1>Relatório por categoria</h1>
+          <p className="cabecalho-pagina__apoio">
+            Para onde o dinheiro foi entre {formatarData(periodoConsultado.dataInicio)} e{' '}
+            {formatarData(periodoConsultado.dataFim)}.
+          </p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit}>
-        <label>
-          De
-          <input
-            type="date"
-            value={dataInicio}
-            onChange={(event) => setDataInicio(event.target.value)}
-            required
-          />
-        </label>
+        <fieldset className="filtros">
+          <legend>Período</legend>
 
-        <label>
-          Até
-          <input
-            type="date"
-            value={dataFim}
-            onChange={(event) => setDataFim(event.target.value)}
-            required
-          />
-        </label>
+          <div className="filtros__campos">
+            <label>
+              De
+              <input
+                type="date"
+                value={dataInicio}
+                onChange={(event) => setDataInicio(event.target.value)}
+                required
+              />
+            </label>
 
-        <button type="submit">Gerar relatório</button>
+            <label>
+              Até
+              <input
+                type="date"
+                value={dataFim}
+                onChange={(event) => setDataFim(event.target.value)}
+                required
+              />
+            </label>
+
+            <button type="submit" data-variante="secundario">
+              Gerar relatório
+            </button>
+          </div>
+        </fieldset>
       </form>
 
-      {carregando && <p role="status">Carregando...</p>}
+      {carregando && <p role="status">Carregando relatório...</p>}
       {erro && <p role="alert">{erro}</p>}
 
       {relatorio && (
         <>
-          <section className="report-summary" aria-label="Totais do período">
-            <article>
-              <h2>Entradas</h2>
-              <p>{formatarMoeda(relatorio.totais.entradas)}</p>
-            </article>
-            <article>
-              <h2>Saídas</h2>
-              <p>{formatarMoeda(relatorio.totais.saidas)}</p>
-            </article>
+          <section className="numeros" aria-label="Totais do período">
+            <div className="numeros__item numeros__item--entrada">
+              <span className="numeros__rotulo">Entradas</span>
+              <strong className="numeros__valor">{formatarMoeda(relatorio.totais.entradas)}</strong>
+            </div>
+            <div className="numeros__item numeros__item--saida">
+              <span className="numeros__rotulo">Saídas</span>
+              <strong className="numeros__valor">{formatarMoeda(relatorio.totais.saidas)}</strong>
+            </div>
+            <div className="numeros__item numeros__item--saldo">
+              <span className="numeros__rotulo">Resultado</span>
+              <strong className="numeros__valor">{formatarMoeda(saldo)}</strong>
+              <span className="numeros__apoio">
+                {relatorio.categorias.length}{' '}
+                {relatorio.categorias.length === 1
+                  ? 'categoria movimentada'
+                  : 'categorias movimentadas'}
+              </span>
+            </div>
           </section>
 
           {relatorio.categorias.length === 0 ? (
-            <p>Nenhuma movimentação encontrada para o período informado.</p>
+            <EstadoVazio
+              titulo="Nenhuma movimentação no período"
+              descricao="Não houve entradas nem saídas entre as datas escolhidas. Escolha um intervalo maior para comparar as categorias."
+            />
           ) : (
             <>
               <section className="category-chart" aria-label="Gráfico por categoria">
@@ -179,26 +205,37 @@ export function CategoryReportPage() {
                     </div>
                   );
                 })}
+
+                <p className="category-chart__escala" aria-hidden="true">
+                  <span>{formatarMoeda('0')}</span>
+                  <span>{formatarMoeda(String(maiorTotal))}</span>
+                </p>
               </section>
 
-              <table>
-                <thead>
-                  <tr>
-                    <th>Categoria</th>
-                    <th>Tipo</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {relatorio.categorias.map((categoria) => (
-                    <tr key={categoria.id}>
-                      <td>{categoria.nome}</td>
-                      <td>{rotuloTipo(categoria.tipo)}</td>
-                      <td>{formatarMoeda(categoria.total)}</td>
+              <TabelaRolavel titulo="Totais por categoria">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Categoria</th>
+                      <th>Tipo</th>
+                      <th data-alinha="direita">Total</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {relatorio.categorias.map((categoria) => (
+                      <tr key={categoria.id}>
+                        <td data-coluna="texto">{categoria.nome}</td>
+                        <td data-coluna="texto">{rotuloTipo(categoria.tipo)}</td>
+                        <td data-alinha="direita">
+                          <span className={`valor valor--${categoria.tipo.toLowerCase()}`}>
+                            {formatarMoeda(categoria.total)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TabelaRolavel>
             </>
           )}
         </>

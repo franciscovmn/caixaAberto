@@ -8,16 +8,33 @@ datasource db {
 }
 
 model User {
-  id           BigInt        @id @default(autoincrement())
-  name         String        @map("nome") @db.VarChar(150)
-  email        String        @unique(map: "USUARIO_email_key") @db.VarChar(150)
-  passwordHash String        @map("senha") @db.VarChar(255)
-  active       Boolean       @map("ativo")
-  createdAt    DateTime      @map("data_criacao") @db.Timestamp(6)
-  memberships  Membership[]
-  transactions Transaction[]
+  id            BigInt         @id @default(autoincrement())
+  name          String         @map("nome") @db.VarChar(150)
+  email         String         @unique(map: "USUARIO_email_key") @db.VarChar(150)
+  passwordHash  String         @map("senha") @db.VarChar(255)
+  active        Boolean        @map("ativo")
+  createdAt     DateTime       @map("data_criacao") @db.Timestamp(6)
+  memberships   Membership[]
+  transactions  Transaction[]
+  revokedTokens RevokedToken[]
 
   @@map("USUARIO")
+}
+
+// Tokens encerrados antes de expirar. O logout passou a invalidar de fato, entao o
+// token apresentado e conferido contra esta lista. Guarda o hash, nunca o token.
+// Cascade porque e dado derivado da sessao, nao historico financeiro: apagar o
+// usuario nao deve esbarrar em revogacoes pendentes.
+model RevokedToken {
+  id        BigInt   @id @default(autoincrement())
+  tokenHash String   @unique(map: "TOKEN_REVOGADO_hash_token_key") @map("hash_token") @db.VarChar(64)
+  userId    BigInt   @map("usuario_id")
+  expiresAt DateTime @map("expira_em") @db.Timestamp(6)
+  revokedAt DateTime @map("data_revogacao") @db.Timestamp(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([expiresAt], map: "TOKEN_REVOGADO_expira_em_idx")
+  @@map("TOKEN_REVOGADO")
 }
 
 model Organization {

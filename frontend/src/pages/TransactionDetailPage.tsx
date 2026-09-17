@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { ReceiptDetailPreview } from '../components/ReceiptAttachment';
-import { formatarMoeda } from '../lib/formato';
+import { formatarData, formatarMoeda, rotuloStatus, valorComSinal } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
+import { useTituloPagina } from '../lib/useTituloPagina';
 
 type TransactionType = 'ENTRADA' | 'SAIDA';
 
@@ -30,13 +31,11 @@ interface TransactionDetail {
 
 const RECIPIENT_LABEL = 'Destinatário';
 const SOURCE_LABEL = 'Origem';
-
-function formatarData(dataISO: string): string {
-  const data = new Date(dataISO);
-  return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-}
+const NAO_INFORMADO = 'Não informado';
 
 export function TransactionDetailPage() {
+  useTituloPagina('Detalhe do lançamento');
+
   const { id } = useParams<{ id: string }>();
   const [lancamento, setLancamento] = useState<TransactionDetail | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -75,7 +74,7 @@ export function TransactionDetailPage() {
   if (carregando) {
     return (
       <main>
-        <p role="status">Carregando...</p>
+        <p role="status">Carregando lançamento...</p>
       </main>
     );
   }
@@ -84,29 +83,51 @@ export function TransactionDetailPage() {
     return (
       <main>
         <p role="alert">{erro ?? 'Lançamento não encontrado.'}</p>
-        <Link to="/lancamentos">Voltar para a listagem</Link>
+        <p>
+          <Link to="/lancamentos">Voltar para a listagem</Link>
+        </p>
       </main>
     );
   }
 
   return (
     <main>
-      <h1>Detalhe do lançamento</h1>
+      <div className="cabecalho-pagina">
+        <div>
+          <h1>{lancamento.description}</h1>
+          <p className="cabecalho-pagina__apoio">
+            {formatarData(lancamento.date)} · {lancamento.category.name}
+            {lancamento.status === 'ESTORNADO' && (
+              <>
+                {' '}
+                <span className="etiqueta etiqueta--estornado">Estornado</span>
+              </>
+            )}
+          </p>
+        </div>
+      </div>
 
-      {lancamento.status === 'ESTORNADO' && <p role="alert">Este lançamento foi estornado.</p>}
+      {lancamento.status === 'ESTORNADO' && (
+        <p role="alert">
+          Este lançamento foi estornado e não entra mais no cálculo do saldo do período.
+        </p>
+      )}
+
+      <section className="numeros" aria-label="Valor do lançamento">
+        <div className={`numeros__item numeros__item--${lancamento.type.toLowerCase()}`}>
+          <span className="numeros__rotulo">
+            {lancamento.type === 'ENTRADA' ? 'Entrada' : 'Saída'}
+          </span>
+          <strong className="numeros__valor">
+            {valorComSinal(lancamento.type, lancamento.amount)}
+          </strong>
+          <span className="numeros__apoio">{formatarMoeda(lancamento.amount)} registrados</span>
+        </div>
+      </section>
 
       <dl>
         <dt>Data</dt>
         <dd>{formatarData(lancamento.date)}</dd>
-
-        <dt>Tipo</dt>
-        <dd>{lancamento.type}</dd>
-
-        <dt>Valor</dt>
-        <dd>{formatarMoeda(lancamento.amount)}</dd>
-
-        <dt>Descrição</dt>
-        <dd>{lancamento.description}</dd>
 
         <dt>Categoria</dt>
         <dd>{lancamento.category.name}</dd>
@@ -117,19 +138,19 @@ export function TransactionDetailPage() {
         {lancamento.type === 'ENTRADA' && (
           <>
             <dt>{SOURCE_LABEL}</dt>
-            <dd>{lancamento.source ?? '—'}</dd>
+            <dd>{lancamento.source ?? NAO_INFORMADO}</dd>
           </>
         )}
 
         {lancamento.type === 'SAIDA' && (
           <>
             <dt>{RECIPIENT_LABEL}</dt>
-            <dd>{lancamento.recipient ?? '—'}</dd>
+            <dd>{lancamento.recipient ?? NAO_INFORMADO}</dd>
           </>
         )}
 
         <dt>Status</dt>
-        <dd>{lancamento.status}</dd>
+        <dd>{rotuloStatus(lancamento.status)}</dd>
 
         <dt>Comprovante</dt>
         <dd>
@@ -141,7 +162,9 @@ export function TransactionDetailPage() {
         </dd>
       </dl>
 
-      <Link to="/lancamentos">Voltar para a listagem</Link>
+      <p>
+        <Link to="/lancamentos">Voltar para a listagem</Link>
+      </p>
     </main>
   );
 }

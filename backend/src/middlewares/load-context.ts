@@ -54,6 +54,18 @@ export async function loadContext(
   }
 
   try {
+    // A conta e reconferida a cada requisicao: desativar um usuario precisa cortar o
+    // acesso na hora, e nao so impedir o proximo login.
+    const usuario = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { active: true },
+    });
+
+    if (!usuario || !usuario.active) {
+      next(new AppError(403, 'Usuário inativo'));
+      return;
+    }
+
     const memberships = await prisma.membership.findMany({
       where: {
         userId,
