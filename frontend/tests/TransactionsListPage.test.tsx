@@ -4,6 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import { TransactionsListPage } from '../src/pages/TransactionsListPage';
+import { hojeISO, mesAtual, primeiroDiaDoMesAtual } from '../src/lib/data';
+import { formatarCompetencia } from '../src/lib/formato';
 import { autenticar, stubApi } from './helpers/api';
 import { escolherDia } from './helpers/campos';
 
@@ -109,25 +111,66 @@ describe('TransactionsListPage', () => {
     expect(await screen.findByText('2 lançamentos no período')).toBeInTheDocument();
   });
 
-  it('oferece limpar os filtros quando a busca não retorna nada', async () => {
+  // A tela abre no mes corrente, como o Extrato e o Relatorio, em vez de despejar o
+  // historico inteiro de uma vez.
+  it('abre consultando o mês corrente', async () => {
     autenticar();
-    stubApi({
-      ...LISTAGEM,
-      '/lancamentos': {
-        body: {
-          dados: [],
-          paginacao: { pagina: 1, tamanhoPagina: 20, total: 0, totalPaginas: 0 },
-        },
+    const api = stubApi(LISTAGEM);
+
+    renderizar();
+
+    await screen.findByText('2 lançamentos no período');
+
+    const consulta = api.chamadasPara('/lancamentos').at(-1)!.url;
+
+    expect(consulta).toContain(`dataInicio=${primeiroDiaDoMesAtual()}`);
+    expect(consulta).toContain(`dataFim=${hojeISO()}`);
+  });
+
+  const SEM_RESULTADO = {
+    ...LISTAGEM,
+    '/lancamentos': {
+      body: {
+        dados: [],
+        paginacao: { pagina: 1, tamanhoPagina: 20, total: 0, totalPaginas: 0 },
       },
-    });
+    },
+  };
+
+  // Tres vazios diferentes, e cada um leva a uma saida diferente.
+  it('distingue o mês sem movimento do caixa vazio', async () => {
+    autenticar();
+    const api = stubApi(SEM_RESULTADO);
     const usuario = userEvent.setup();
 
     renderizar();
 
-    // Sem filtro aplicado, a tela convida a registrar o primeiro lançamento.
+    const mes = formatarCompetencia(mesAtual());
+
+    expect(await screen.findByText(`Nenhum lançamento em ${mes}`)).toBeInTheDocument();
+
+    await usuario.click(screen.getByRole('button', { name: 'Ver todo o histórico' }));
+
+    // Sem periodo nenhum e ainda sem resultado: aí sim o caixa nunca teve lançamento.
     expect(await screen.findByText('O caixa ainda está vazio')).toBeInTheDocument();
 
-    await escolherDia(usuario, 'De', 1);
+    const consulta = api.chamadasPara('/lancamentos').at(-1)!.url;
+
+    expect(consulta).not.toContain('dataInicio=');
+    expect(consulta).not.toContain('dataFim=');
+  });
+
+  it('oferece limpar os filtros quando o recorte do usuário não retorna nada', async () => {
+    autenticar();
+    stubApi(SEM_RESULTADO);
+    const usuario = userEvent.setup();
+
+    renderizar();
+
+    await screen.findByText(`Nenhum lançamento em ${formatarCompetencia(mesAtual())}`);
+
+    // Dia 2, e nao 1: o dia 1 e o inicio padrao, e o recorte continuaria sendo o do mes.
+    await escolherDia(usuario, 'De', 2);
     await usuario.click(screen.getByRole('button', { name: 'Filtrar' }));
 
     expect(await screen.findByText('Nenhum lançamento no período')).toBeInTheDocument();

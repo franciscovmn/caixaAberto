@@ -7,7 +7,14 @@ import { IconeComprovante } from '../components/ui/IconeComprovante';
 import { SeletorData } from '../components/ui/SeletorData';
 import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
-import { formatarData, formatarMoeda, rotuloTipo, valorComSinal } from '../lib/formato';
+import { hojeISO, primeiroDiaDoMesAtual } from '../lib/data';
+import {
+  formatarCompetencia,
+  formatarData,
+  formatarMoeda,
+  rotuloTipo,
+  valorComSinal,
+} from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { podeEscrever } from '../lib/session';
 import { useTituloPagina } from '../lib/useTituloPagina';
@@ -46,12 +53,32 @@ interface Filtros {
   categoriaId: string;
 }
 
-const FILTROS_INICIAIS: Filtros = {
+// Sem periodo nenhum: e o que o botao de limpar devolve, para a trilha completa
+// aparecer quando alguem procura um lancamento antigo.
+const SEM_FILTROS: Filtros = {
   dataInicio: '',
   dataFim: '',
   tipo: '',
   categoriaId: '',
 };
+
+// A tela abre no mes corrente, como o Extrato e o Relatorio, em vez de despejar o
+// historico inteiro. E funcao, e nao constante, porque o mes vira enquanto a aplicacao
+// pode estar aberta.
+function filtrosIniciais(): Filtros {
+  return { ...SEM_FILTROS, dataInicio: primeiroDiaDoMesAtual(), dataFim: hojeISO() };
+}
+
+function ehPeriodoPadrao(filtros: Filtros): boolean {
+  const padrao = filtrosIniciais();
+
+  return (
+    filtros.dataInicio === padrao.dataInicio &&
+    filtros.dataFim === padrao.dataFim &&
+    !filtros.tipo &&
+    !filtros.categoriaId
+  );
+}
 
 const COLUNAS = 6;
 
@@ -76,7 +103,7 @@ export function TransactionsListPage() {
 
   const escrita = podeEscrever();
 
-  const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIAIS);
+  const [filtros, setFiltros] = useState<Filtros>(filtrosIniciais);
   const [pagina, setPagina] = useState(1);
   const [resultado, setResultado] = useState<TransactionListResponse | null>(null);
   const [categorias, setCategorias] = useState<CategoryOption[]>([]);
@@ -135,7 +162,7 @@ export function TransactionsListPage() {
   }
 
   function limparFiltros() {
-    setFiltros(FILTROS_INICIAIS);
+    setFiltros(SEM_FILTROS);
     setPagina(1);
   }
 
@@ -234,8 +261,27 @@ export function TransactionsListPage() {
       )}
       {erro && <p role="alert">{erro}</p>}
 
+      {/* Tres vazios diferentes: o mes que a tela abre sem movimento, o recorte que o
+          usuario montou sem resultado, e o caixa que nunca teve lancamento. */}
       {semResultados &&
-        (temFiltroAplicado(filtros) ? (
+        (ehPeriodoPadrao(filtros) ? (
+          <EstadoVazio
+            titulo={`Nenhum lançamento em ${formatarCompetencia(filtros.dataInicio.slice(0, 7))}`}
+            descricao="A listagem abre no mês corrente. Veja o histórico completo para encontrar lançamentos de meses anteriores."
+            acoes={
+              <>
+                <button type="button" data-variante="secundario" onClick={limparFiltros}>
+                  Ver todo o histórico
+                </button>
+                {escrita && (
+                  <Link className="acao" to="/lancamentos/entrada">
+                    Registrar entrada
+                  </Link>
+                )}
+              </>
+            }
+          />
+        ) : temFiltroAplicado(filtros) ? (
           <EstadoVazio
             titulo="Nenhum lançamento no período"
             descricao="Os filtros aplicados não encontraram movimentações. Amplie o período ou limpe os filtros para ver a trilha completa."
