@@ -1,6 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
+import { mesAtual } from '../src/lib/data';
 import { MonthlySummaryPage } from '../src/pages/MonthlySummaryPage';
 import { autenticar, stubApi } from './helpers/api';
 
@@ -81,5 +83,28 @@ describe('MonthlySummaryPage', () => {
     render(<MonthlySummaryPage />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Erro interno do servidor');
+  });
+
+  // O campo de competencia deixou de ser input[type="month"], que o Safari nao implementa,
+  // e o teste segue a tela pelo gesto que o usuario faz: abrir e escolher.
+  it('consulta outra competência quando o mês é trocado no seletor', async () => {
+    const usuario = userEvent.setup();
+    autenticar();
+    const api = stubApi(RESUMO);
+
+    render(<MonthlySummaryPage />);
+
+    await screen.findByRole('region', { name: /Resumo de/ });
+
+    await usuario.click(screen.getByLabelText('Mês'));
+    const painel = screen.getByRole('dialog', { name: 'Escolher competência' });
+    await usuario.click(within(painel).getByRole('button', { name: 'jan' }));
+
+    const consultas = api.chamadasPara('/transactions/resumo/mensal');
+
+    // A tela abre no mes corrente, entao o painel mostra o ano de hoje.
+    const anoVigente = mesAtual().slice(0, 4);
+
+    expect(consultas.at(-1)?.url).toContain(`mes=${anoVigente}-01`);
   });
 });

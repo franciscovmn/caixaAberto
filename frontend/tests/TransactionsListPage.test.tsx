@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { TransactionsListPage } from '../src/pages/TransactionsListPage';
 import { autenticar, stubApi } from './helpers/api';
+import { escolherDia } from './helpers/campos';
 
 const LISTAGEM = {
   '/categorias': { body: { dados: [{ id: '1', nome: 'Mensalidade' }] } },
@@ -126,7 +127,7 @@ describe('TransactionsListPage', () => {
     // Sem filtro aplicado, a tela convida a registrar o primeiro lançamento.
     expect(await screen.findByText('O caixa ainda está vazio')).toBeInTheDocument();
 
-    await usuario.type(screen.getByLabelText('De'), '2020-01-01');
+    await escolherDia(usuario, 'De', 1);
     await usuario.click(screen.getByRole('button', { name: 'Filtrar' }));
 
     expect(await screen.findByText('Nenhum lançamento no período')).toBeInTheDocument();

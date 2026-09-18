@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { TransactionForm } from '../src/components/TransactionForm';
 import { autenticar, stubApi } from './helpers/api';
+import { escolherDia } from './helpers/campos';
 
 const CATEGORIAS = {
   '/categorias': { body: { dados: [{ id: '1', nome: 'Mensalidade', tipo: 'ENTRADA' }] } },
@@ -30,11 +31,13 @@ async function preencher(
 
   await usuario.selectOptions(screen.getByLabelText(/Categoria/), '1');
   await usuario.type(screen.getByLabelText(/Valor/), campos.valor ?? '150.00');
-  await usuario.type(screen.getByLabelText(/Data/), '2026-09-16');
+  const data = await escolherDia(usuario, /Data/, 16);
 
   if (campos.descricao) {
     await usuario.type(screen.getByLabelText(/Descrição/), campos.descricao);
   }
+
+  return data;
 }
 
 function salvar(usuario: ReturnType<typeof userEvent.setup>) {
@@ -84,6 +87,23 @@ describe('TransactionForm', () => {
     expect(api.chamadasPara('/transactions')).toHaveLength(0);
   });
 
+  // O campo de data era input[type="date"] com required, entao o proprio navegador
+  // barrava o envio vazio. Agora o campo e um seletor, e quem barra e a validacao da tela.
+  it('não envia nada quando a data não foi escolhida', async () => {
+    const api = stubApi({ ...CATEGORIAS, ...LANCAMENTO_CRIADO });
+    const usuario = userEvent.setup();
+    renderizar();
+
+    await screen.findByRole('option', { name: /Mensalidade/ });
+    await usuario.selectOptions(screen.getByLabelText(/Categoria/), '1');
+    await usuario.type(screen.getByLabelText(/Valor/), '150.00');
+    await usuario.type(screen.getByLabelText(/Descrição/), 'Mensalidade sem data');
+    await salvar(usuario);
+
+    expect(await screen.findByText('Informe a data do lançamento.')).toBeInTheDocument();
+    expect(api.chamadasPara('/transactions')).toHaveLength(0);
+  });
+
   it('recusa valor zero ou negativo', async () => {
     const api = stubApi({ ...CATEGORIAS, ...LANCAMENTO_CRIADO });
     const usuario = userEvent.setup();
@@ -130,7 +150,7 @@ describe('TransactionForm', () => {
     const usuario = userEvent.setup();
     renderizar();
 
-    await preencher(usuario, { valor: '310.00', descricao: 'Mensalidade de outubro' });
+    const data = await preencher(usuario, { valor: '310.00', descricao: 'Mensalidade de outubro' });
     await usuario.type(screen.getByLabelText(/Origem/), 'Turma 2026');
     await salvar(usuario);
 
@@ -139,7 +159,7 @@ describe('TransactionForm', () => {
     expect(api.chamadasPara('/transactions')[0]!.body).toMatchObject({
       categoryId: '1',
       amount: '310.00',
-      date: '2026-09-16',
+      date: data,
       description: 'Mensalidade de outubro',
       tipo: 'ENTRADA',
       source: 'Turma 2026',

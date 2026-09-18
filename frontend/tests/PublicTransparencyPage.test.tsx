@@ -1,7 +1,9 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
+import { mesAtual } from '../src/lib/data';
 import { PublicTransparencyPage } from '../src/pages/PublicTransparencyPage';
 import { stubApi } from './helpers/api';
 
@@ -101,5 +103,38 @@ describe('PublicTransparencyPage', () => {
     renderizar();
 
     expect(await screen.findByText('Sem movimentações neste mês')).toBeInTheDocument();
+  });
+
+  it('troca a competência pelo seletor e leva o mês para a consulta', async () => {
+    const usuario = userEvent.setup();
+    const api = stubApi(TRANSPARENCIA);
+
+    renderizar();
+
+    await screen.findByText('Comissão de Formatura');
+
+    await usuario.click(screen.getByLabelText('Mês'));
+    const painel = screen.getByRole('dialog', { name: 'Escolher competência' });
+    await usuario.click(within(painel).getByRole('button', { name: 'jun' }));
+
+    expect(api.chamadasPara('/transparency/').at(-1)?.url).toContain('mes=2026-06');
+  });
+
+  // A competencia vem da query string, que qualquer visitante pode editar na barra de
+  // enderecos. Antes ela ia crua para a API e a pagina publica abria em erro.
+  it('ignora mês inválido na URL e abre no mês corrente', async () => {
+    const api = stubApi(TRANSPARENCIA);
+
+    render(
+      <MemoryRouter initialEntries={['/transparencia/token-publico?mes=2026-0a']}>
+        <Routes>
+          <Route path="/transparencia/:link" element={<PublicTransparencyPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('Comissão de Formatura');
+
+    expect(api.chamadasPara('/transparency/').at(-1)?.url).toContain(`mes=${mesAtual()}`);
   });
 });

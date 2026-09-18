@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { CategoryReportPage } from '../src/pages/CategoryReportPage';
 import { autenticar, stubApi } from './helpers/api';
+import { escolherDia } from './helpers/campos';
 
 // O Intl separa o simbolo do numero com espaco nao separavel, e o Testing Library normaliza esse
 // caractere ao comparar. As consultas usam \\s para nao depender de qual espaco esta no DOM.
@@ -56,10 +57,9 @@ describe('CategoryReportPage', () => {
     await screen.findByRole('region', { name: 'Totais do período' });
     const consultasIniciais = api.chamadasPara('/relatorios/categorias').length;
 
-    await usuario.clear(screen.getByLabelText('De'));
-    await usuario.type(screen.getByLabelText('De'), '2026-09-30');
-    await usuario.clear(screen.getByLabelText('Até'));
-    await usuario.type(screen.getByLabelText('Até'), '2026-09-01');
+    // Dia 2 no inicio e dia 1 no fim: periodo invertido dentro do mes que o painel abre.
+    await escolherDia(usuario, 'De', 2);
+    await escolherDia(usuario, 'Até', 1);
     await usuario.click(screen.getByRole('button', { name: /Gerar relatório/ }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  formatarCompetencia,
   formatarData,
+  formatarMesCurto,
   formatarMoeda,
+  formatarNomeDoMes,
   rotuloStatus,
   rotuloTipo,
   valorComSinal,
@@ -62,5 +65,22 @@ describe('valorComSinal', () => {
   it('prefixa entrada com mais e saída com menos', () => {
     expect(valorComSinal('ENTRADA', '1310.00')).toMatch(/^\+R\$\s*1\.310,00$/);
     expect(valorComSinal('SAIDA', '150.00')).toMatch(/^-R\$\s*150,00$/);
+  });
+});
+
+describe('competência na tela', () => {
+  // No campo de filtro a competencia fica numerica, para alinhar com o 01/09/2026
+  // dos campos de data. Nos titulos ela aparece por extenso.
+  it('mostra a competência curta no formato MM/AAAA', () => {
+    expect(formatarMesCurto('2026-09')).toBe('09/2026');
+  });
+
+  it('escreve a competência por extenso em pt-BR', () => {
+    expect(formatarCompetencia('2026-09')).toBe('setembro de 2026');
+    expect(formatarNomeDoMes('2026-08')).toBe('agosto');
+  });
+
+  it('devolve o valor original quando a competência não é uma data', () => {
+    expect(formatarCompetencia('competencia')).toBe('competencia');
   });
 });

@@ -320,9 +320,317 @@ a:focus-visible,
   gap: var(--space-3);
 }
 
-.filtros__campos button {
+/* So o botao do proprio filtro, com o seletor filho: sem isso a regra alcancava os
+   botoes dentro dos paineis de data, que encolhiam ate a largura do numero. */
+.filtros__campos > button {
   align-self: end;
   justify-self: start;
+}
+
+/* Cada navegador desenha o indicador nativo do select de um jeito, seta simples no
+   Chrome e par de setas no Safari, com alturas diferentes. A aparencia e zerada e a
+   seta passa a ser a nossa, em SVG, para o campo ficar igual nos dois. */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%234a5568' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-2) center;
+  padding-right: calc(var(--space-3) + var(--space-3));
+}
+
+/* Campos de data, texto e select terminam na mesma altura, o que o desenho nativo
+   de cada navegador nao garante sozinho. */
+input,
+select,
+.campo-popover__campo {
+  min-height: 2.5rem;
+}
+
+/* ---------- Campo de arquivo ---------- */
+/* O input de arquivo fica fora da vista, com a classe de leitor de tela, e quem aparece
+   e este par botao e nome: o controle nativo tem botao, texto e altura proprios em cada
+   navegador, e nada disso e estilizavel de forma confiavel. */
+.campo-arquivo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.campo-arquivo__controle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.campo-arquivo__botao {
+  flex: none;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    background var(--transicao),
+    color var(--transicao);
+}
+
+.campo-arquivo__botao:hover {
+  color: var(--color-bg);
+  background: var(--color-ink);
+}
+
+/* O input escondido continua sendo o campo que recebe foco, entao o anel aparece no
+   botao que esta no lugar dele. */
+.campo-arquivo input:focus-visible + .campo-arquivo__controle .campo-arquivo__botao {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.campo-arquivo__nome {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.campo-arquivo__nome[data-vazio] {
+  color: var(--color-ink-soft);
+}
+
+.campo-arquivo[data-desabilitado] .campo-arquivo__botao {
+  color: var(--color-ink-soft);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+  cursor: not-allowed;
+}
+
+/* Campo desligado: cada navegador escurece o seu de um jeito, entao a cor e o fundo
+   ficam declarados aqui e a opacidade do desenho nativo e neutralizada. */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  color: var(--color-ink-soft);
+  background: var(--color-surface-alt);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* ---------- Campos com painel de escolha ---------- */
+/* O Safari nao implementa input[type="month"] e degrada o campo para texto livre, e os
+   campos de data nativos ainda mudam de desenho conforme o navegador. Competencia e data
+   passam a ser escolhidas num painel proprio, com o mesmo gesto em qualquer navegador. */
+.campo-popover {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.campo-popover__campo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  align-self: stretch;
+  padding: var(--space-2);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  text-align: left;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+  transition: border-color var(--transicao);
+}
+
+.campo-popover__campo:hover {
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border-color: var(--color-ink-soft);
+}
+
+/* Campo de filtro sem data escolhida: o texto e um marcador, nao um valor. */
+.campo-popover__campo[data-vazio] span {
+  color: var(--color-ink-soft);
+}
+
+.campo-popover__campo[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.campo-popover__campo svg {
+  flex: none;
+  color: var(--color-ink-soft);
+}
+
+.campo-popover__painel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  width: max-content;
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+}
+
+.campo-popover__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-rule-soft);
+}
+
+.campo-popover__cabecalho strong {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.campo-popover__navegar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.campo-popover__navegar:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+}
+
+/* O mes no cabecalho do calendario abre a grade de meses. */
+.campo-popover__competencia {
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.campo-popover__competencia:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+}
+
+.campo-popover__acoes {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-rule-soft);
+  text-align: right;
+}
+
+.campo-popover__acao {
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-accent);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.campo-popover__acao:hover {
+  color: var(--color-accent);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+}
+
+.seletor-mes__grade {
+  display: grid;
+  grid-template-columns: repeat(3, 68px);
+  gap: var(--space-1);
+}
+
+.seletor-mes__mes {
+  padding: var(--space-2) var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.seletor-data__semana,
+.seletor-data__grade {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 2px;
+}
+
+.seletor-data__semana {
+  margin-bottom: var(--space-1);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  text-align: center;
+}
+
+.seletor-data__dia {
+  min-height: 0;
+  padding: var(--space-1) 0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.seletor-mes__mes:hover,
+.seletor-data__dia:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+}
+
+/* O dia corrente fica marcado pela cor de destaque, e o escolhido pelo preenchimento,
+   para que os dois estados convivam sem competir. */
+.seletor-mes__mes[data-hoje],
+.seletor-data__dia[data-hoje] {
+  color: var(--color-accent);
+  border-color: var(--color-rule);
+}
+
+.seletor-mes__mes[aria-pressed='true'],
+.seletor-mes__mes[aria-pressed='true']:hover,
+.seletor-data__dia[aria-pressed='true'],
+.seletor-data__dia[aria-pressed='true']:hover {
+  color: var(--color-bg);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
 }
 
 /* ---------- Botoes ---------- */

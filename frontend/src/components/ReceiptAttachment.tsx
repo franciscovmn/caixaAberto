@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 
 import { ApiError, apiBlobRequest } from '../lib/httpClient';
@@ -82,6 +82,8 @@ export function ReceiptUploadField({
   onChange,
 }: ReceiptUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const campoId = useId();
+  const rotuloId = useId();
 
   useEffect(() => {
     if (!file && inputRef.current) {
@@ -106,28 +108,40 @@ export function ReceiptUploadField({
     onChange(selectedFile, null);
   }
 
+  // O controle nativo de arquivo e desenhado por cada navegador, com botao, texto e
+  // altura proprios. O input continua sendo o campo, so que fora da vista, e quem
+  // aparece e um botao do proprio sistema visual, igual em qualquer navegador.
   return (
-    <label>
-      Comprovante
+    <div className="campo-arquivo" data-desabilitado={disabled || undefined}>
+      <span className="campo-arquivo__rotulo" id={rotuloId}>
+        Comprovante
+      </span>
+
       <input
         ref={inputRef}
+        id={campoId}
+        className="apenas-leitor"
         type="file"
         accept="application/pdf,image/jpeg,image/png,image/webp"
         onChange={handleChange}
         disabled={disabled}
+        aria-labelledby={rotuloId}
         aria-invalid={error ? true : undefined}
       />
+
+      <div className="campo-arquivo__controle">
+        <label className="campo-arquivo__botao" htmlFor={campoId}>
+          Escolher arquivo
+        </label>
+        <span className="campo-arquivo__nome" data-vazio={!file || undefined}>
+          {file ? `${file.name} (${formatarTamanho(file.size)})` : 'Nenhum arquivo escolhido'}
+        </span>
+      </div>
+
       <small>Imagem ou PDF de até 5 MB.</small>
       {error && <small role="alert">{error}</small>}
-      {file && (
-        <>
-          <small>
-            Arquivo selecionado: {file.name} ({formatarTamanho(file.size)})
-          </small>
-          <ReceiptPreview file={file} fileName={file.name} fileType={file.type} />
-        </>
-      )}
-    </label>
+      {file && <ReceiptPreview file={file} fileName={file.name} fileType={file.type} />}
+    </div>
   );
 }
 
