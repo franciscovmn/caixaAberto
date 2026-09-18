@@ -294,7 +294,12 @@ a:focus-visible,
 }
 
 /* Filtros ficam lado a lado; o formulario de lancamento declara a coluna por classe. */
+/* O fieldset e posicionado e sobe no empilhamento por causa do painel de data: o Safari
+   trata fieldset como contexto proprio, entao o z-index do painel nao alcancava o que
+   vem depois na pagina, e o cabecalho fixo da tabela passava por cima do calendario. */
 .filtros {
+  position: relative;
+  z-index: 2;
   margin: 0 0 var(--space-4);
   padding: var(--space-3);
   border: 1px solid var(--color-rule);
