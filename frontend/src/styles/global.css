@@ -1115,12 +1115,208 @@ dd {
   object-fit: contain;
 }
 
-.receipt-preview figcaption,
-.receipt-detail small {
-  display: block;
-  margin-top: var(--space-1);
+.receipt-detail small,
+.receipt-preview__acoes small {
   font-family: var(--font-sans);
   color: var(--color-ink-soft);
+}
+
+/* ---------- Visualizador de comprovante ---------- */
+/* O comprovante nasce pequeno na pagina, entao o botao Ampliar abre o arquivo em tela
+   cheia. O dialog nativo cuida do foco preso, do Escape e do fundo inerte. */
+.receipt-preview__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.receipt-preview__ampliar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+}
+
+.receipt-preview__ampliar:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-ink-soft);
+}
+
+/* A imagem tambem abre o visualizador, entao ela precisa parecer clicavel. */
+.receipt-preview__gatilho {
+  display: block;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: zoom-in;
+}
+
+.visualizador {
+  width: min(94vw, 1100px);
+  max-width: none;
+  height: min(92vh, 900px);
+  max-height: none;
+  padding: 0;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+}
+
+.visualizador::backdrop {
+  background: rgba(22, 35, 61, 0.72);
+}
+
+.visualizador__quadro {
+  display: grid;
+  /* minmax(0, 1fr) no lugar de 1fr: sem isso a linha do meio cresce com a imagem,
+     o corpo deixa de ter altura definida e o ajuste a tela nao ajusta nada. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+}
+
+.visualizador__cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.visualizador__titulo {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.visualizador__apoio {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-ink-soft);
+}
+
+.visualizador__corpo {
+  /* A altura precisa ser declarada, e nao so herdada da linha do grid: porcentagem em
+     max-height so resolve contra um pai de altura definida, e sem isso a imagem
+     ignorava o limite e o ajuste a tela nao ajustava nada. */
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  background: var(--color-surface-alt);
+  padding: var(--space-3);
+  /* Flex, e nao grid: numa grade a linha cresce com a imagem, entao a porcentagem do
+     max-height resolvia contra a propria imagem e nunca limitava nada. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ajustado a tela: o comprovante inteiro cabe na area. */
+.visualizador__corpo[data-ajuste='tela'] img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.visualizador__corpo[data-ajuste='real'] img {
+  flex: none;
+}
+
+/* Tamanho real: a imagem passa do quadro e a area rola, que e o que resolve um
+   comprovante fotografado com letra miuda. */
+.visualizador__corpo[data-ajuste='real'] {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.visualizador__corpo[data-ajuste='real'] img {
+  max-width: none;
+  max-height: none;
+}
+
+.visualizador__corpo img {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+}
+
+.visualizador__corpo object,
+.visualizador__corpo iframe {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.visualizador__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-rule);
+}
+
+/* Baixar e Fechar ficam sempre a direita, inclusive no PDF, que nao tem os botoes de
+   ajuste porque o proprio visualizador do navegador ja traz o zoom dele. */
+.visualizador__grupo:last-child {
+  margin-left: auto;
+}
+
+.visualizador__grupo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.visualizador__acao {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+}
+
+.visualizador__acao:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-ink-soft);
+}
+
+.visualizador__acao[aria-pressed='true'] {
+  color: var(--color-bg);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+/* Fora do visualizador o PDF tambem precisa de altura declarada: sem isso o navegador
+   desenha o object no padrao de 300x150, ilegivel para um comprovante. */
+.receipt-preview object {
+  display: block;
+  width: min(100%, 360px);
+  height: 420px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+  background: var(--color-surface);
 }
 
 /* Capa da pagina publica: e a unica tela que pessoas de fora enxergam. */

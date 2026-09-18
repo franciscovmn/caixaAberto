@@ -1,16 +1,19 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 
 import { ApiError, apiBlobRequest } from '../lib/httpClient';
+import { VisualizadorComprovante } from './ui/VisualizadorComprovante';
 
 const MAX_RECEIPT_SIZE_BYTES = 5 * 1024 * 1024;
 const INVALID_RECEIPT_MESSAGE = 'Envie uma imagem ou PDF de até 5 MB';
 const ALLOWED_RECEIPT_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
 
 interface ReceiptPreviewProps {
-  file: Blob;
+  url: string;
   fileName: string;
   fileType: string;
+  apoio: string;
+  legenda?: boolean;
 }
 
 interface ReceiptUploadFieldProps {
@@ -45,33 +48,78 @@ function formatarTamanho(bytes: number): string {
   })} MB`;
 }
 
-function ReceiptPreview({ file, fileName, fileType }: ReceiptPreviewProps) {
-  const objectUrl = useMemo(() => URL.createObjectURL(file), [file]);
-
-  useEffect(() => {
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [objectUrl]);
-
-  if (fileType.startsWith('image/')) {
-    return (
-      <figure className="receipt-preview">
-        <img src={objectUrl} alt={`Pré-visualização de ${fileName}`} />
-        <figcaption>{fileName}</figcaption>
-      </figure>
-    );
-  }
+// A URL do arquivo chega pronta de quem tem o blob: criar aqui, e revogar na limpeza do
+// efeito, derrubava a propria URL que a tela estava usando, e a imagem dentro do
+// visualizador nascia quebrada enquanto a miniatura ja carregada continuava na tela.
+function ReceiptPreview({ url, fileName, fileType, apoio, legenda = false }: ReceiptPreviewProps) {
+  const [ampliado, setAmpliado] = useState(false);
+  const ehImagem = fileType.startsWith('image/');
 
   return (
-    <div className="receipt-preview">
-      <object data={objectUrl} type={fileType} aria-label={`Pré-visualização de ${fileName}`}>
-        <a href={objectUrl} target="_blank" rel="noreferrer">
-          Abrir pré-visualização de {fileName}
-        </a>
-      </object>
-      <small>{fileName}</small>
+    <div className="receipt-detail">
+      {ehImagem ? (
+        <figure className="receipt-preview">
+          {/* A miniatura tambem abre o visualizador: e o gesto que se espera de uma
+              imagem pequena, antes de procurar o botao. */}
+          <button
+            type="button"
+            className="receipt-preview__gatilho"
+            onClick={() => setAmpliado(true)}
+          >
+            <img src={url} alt={`Pré-visualização de ${fileName}`} />
+          </button>
+        </figure>
+      ) : (
+        <div className="receipt-preview">
+          <object data={url} type={fileType} aria-label={`Pré-visualização de ${fileName}`}>
+            <a href={url} target="_blank" rel="noreferrer">
+              Abrir pré-visualização de {fileName}
+            </a>
+          </object>
+        </div>
+      )}
+
+      <div className="receipt-preview__acoes">
+        <button
+          type="button"
+          className="receipt-preview__ampliar"
+          onClick={() => setAmpliado(true)}
+        >
+          <IconeLupa />
+          Ampliar
+        </button>
+        {legenda && <small>{apoio}</small>}
+      </div>
+
+      {ampliado && (
+        <VisualizadorComprovante
+          url={url}
+          nome={fileName}
+          tipo={fileType}
+          apoio={apoio}
+          aoFechar={() => setAmpliado(false)}
+        />
+      )}
     </div>
+  );
+}
+
+function IconeLupa() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="7" cy="7" r="4.5" />
+      <path d="M10.5 10.5 14 14M7 5v4M5 7h4" />
+    </svg>
   );
 }
 
@@ -84,6 +132,17 @@ export function ReceiptUploadField({
   const inputRef = useRef<HTMLInputElement>(null);
   const campoId = useId();
   const rotuloId = useId();
+  const [urlPrevia, setUrlPrevia] = useState('');
+
+  // A URL nasce e morre no proprio evento de escolha do arquivo, que e quando se sabe
+  // que o anterior nao serve mais. Fazer isso num efeito revogaria a URL em uso.
+  function trocarPrevia(escolhido: File | null) {
+    setUrlPrevia((atual) => {
+      if (atual) URL.revokeObjectURL(atual);
+
+      return escolhido ? URL.createObjectURL(escolhido) : '';
+    });
+  }
 
   useEffect(() => {
     if (!file && inputRef.current) {
@@ -95,16 +154,19 @@ export function ReceiptUploadField({
     const selectedFile = event.target.files?.[0] ?? null;
 
     if (!selectedFile) {
+      trocarPrevia(null);
       onChange(null, null);
       return;
     }
 
     if (!isReceiptFileValid(selectedFile)) {
       event.target.value = '';
+      trocarPrevia(null);
       onChange(null, INVALID_RECEIPT_MESSAGE);
       return;
     }
 
+    trocarPrevia(selectedFile);
     onChange(selectedFile, null);
   }
 
@@ -140,18 +202,26 @@ export function ReceiptUploadField({
 
       <small>Imagem ou PDF de até 5 MB.</small>
       {error && <small role="alert">{error}</small>}
-      {file && <ReceiptPreview file={file} fileName={file.name} fileType={file.type} />}
+      {file && urlPrevia && (
+        <ReceiptPreview
+          url={urlPrevia}
+          fileName={file.name}
+          fileType={file.type}
+          apoio={`${file.name} (${formatarTamanho(file.size)})`}
+        />
+      )}
     </div>
   );
 }
 
 export function ReceiptDetailPreview({ transactionId, receipt }: ReceiptDetailPreviewProps) {
-  const [arquivo, setArquivo] = useState<Blob | null>(null);
+  const [urlArquivo, setUrlArquivo] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     let cancelado = false;
+    let urlCriada = '';
 
     async function carregarComprovante() {
       setCarregando(true);
@@ -159,7 +229,13 @@ export function ReceiptDetailPreview({ transactionId, receipt }: ReceiptDetailPr
 
       try {
         const blob = await apiBlobRequest(`/lancamentos/${transactionId}/comprovante`);
-        if (!cancelado) setArquivo(blob);
+
+        if (!cancelado) {
+          // A URL e criada depois que o arquivo chega, e so esta execucao do efeito a
+          // revoga: assim a limpeza nunca derruba a URL que a tela esta exibindo.
+          urlCriada = URL.createObjectURL(blob);
+          setUrlArquivo(urlCriada);
+        }
       } catch (error) {
         if (!cancelado) {
           setErro(
@@ -175,6 +251,7 @@ export function ReceiptDetailPreview({ transactionId, receipt }: ReceiptDetailPr
 
     return () => {
       cancelado = true;
+      if (urlCriada) URL.revokeObjectURL(urlCriada);
     };
   }, [transactionId]);
 
@@ -182,16 +259,17 @@ export function ReceiptDetailPreview({ transactionId, receipt }: ReceiptDetailPr
     return <span role="status">Carregando comprovante...</span>;
   }
 
-  if (erro || !arquivo) {
+  if (erro || !urlArquivo) {
     return <span role="alert">{erro ?? 'Comprovante não encontrado.'}</span>;
   }
 
   return (
-    <div className="receipt-detail">
-      <ReceiptPreview file={arquivo} fileName={receipt.fileName} fileType={receipt.fileType} />
-      <small>
-        {receipt.fileName} ({formatarTamanho(Number(receipt.size))})
-      </small>
-    </div>
+    <ReceiptPreview
+      url={urlArquivo}
+      fileName={receipt.fileName}
+      fileType={receipt.fileType}
+      apoio={`${receipt.fileName} (${formatarTamanho(Number(receipt.size))})`}
+      legenda
+    />
   );
 }
