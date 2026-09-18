@@ -320,7 +320,9 @@ a:focus-visible,
   gap: var(--space-3);
 }
 
-.filtros__campos button {
+/* So o botao do proprio filtro, com o seletor filho: sem isso a regra alcancava os
+   botoes dentro dos paineis de data, que encolhiam ate a largura do numero. */
+.filtros__campos > button {
   align-self: end;
   justify-self: start;
 }
