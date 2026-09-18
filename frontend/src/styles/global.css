@@ -346,6 +346,82 @@ select,
   min-height: 2.5rem;
 }
 
+/* ---------- Campo de arquivo ---------- */
+/* O input de arquivo fica fora da vista, com a classe de leitor de tela, e quem aparece
+   e este par botao e nome: o controle nativo tem botao, texto e altura proprios em cada
+   navegador, e nada disso e estilizavel de forma confiavel. */
+.campo-arquivo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.campo-arquivo__controle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.campo-arquivo__botao {
+  flex: none;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    background var(--transicao),
+    color var(--transicao);
+}
+
+.campo-arquivo__botao:hover {
+  color: var(--color-bg);
+  background: var(--color-ink);
+}
+
+/* O input escondido continua sendo o campo que recebe foco, entao o anel aparece no
+   botao que esta no lugar dele. */
+.campo-arquivo input:focus-visible + .campo-arquivo__controle .campo-arquivo__botao {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.campo-arquivo__nome {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.campo-arquivo__nome[data-vazio] {
+  color: var(--color-ink-soft);
+}
+
+.campo-arquivo[data-desabilitado] .campo-arquivo__botao {
+  color: var(--color-ink-soft);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+  cursor: not-allowed;
+}
+
+/* Campo desligado: cada navegador escurece o seu de um jeito, entao a cor e o fundo
+   ficam declarados aqui e a opacidade do desenho nativo e neutralizada. */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  color: var(--color-ink-soft);
+  background: var(--color-surface-alt);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
 /* ---------- Campos com painel de escolha ---------- */
 /* O Safari nao implementa input[type="month"] e degrada o campo para texto livre, e os
    campos de data nativos ainda mudam de desenho conforme o navegador. Competencia e data

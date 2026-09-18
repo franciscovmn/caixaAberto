@@ -32,6 +32,19 @@ function CampoControlado({ aoMudar }: { aoMudar?: (arquivo: File | null) => void
 }
 
 describe('ReceiptUploadField', () => {
+  // O controle nativo de arquivo tem botao, texto e altura proprios em cada navegador.
+  // O input continua sendo o campo, e quem aparece e o botao do sistema visual.
+  it('mostra o botão e o estado vazio no lugar do controle nativo', () => {
+    render(<CampoControlado />);
+
+    const campo = screen.getByLabelText(/Comprovante/);
+    const botao = screen.getByText('Escolher arquivo');
+
+    expect(campo).toHaveAttribute('type', 'file');
+    expect(botao).toHaveAttribute('for', campo.id);
+    expect(screen.getByText('Nenhum arquivo escolhido')).toBeInTheDocument();
+  });
+
   it('aceita PDF e imagem dentro do limite', async () => {
     const usuario = userEvent.setup();
     const aoMudar = vi.fn();
@@ -43,7 +56,9 @@ describe('ReceiptUploadField', () => {
     );
 
     expect(aoMudar).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'nota.pdf' }));
-    expect(screen.getByText(/Arquivo selecionado: nota\.pdf/)).toBeInTheDocument();
+    // O nome e o tamanho aparecem ao lado do botao, no lugar do texto que o controle
+    // nativo de arquivo desenhava de um jeito em cada navegador.
+    expect(screen.getByText(/nota\.pdf \(/)).toBeInTheDocument();
   });
 
   // Via fireEvent, e nao userEvent: o upload do userEvent respeita o atributo accept e nem entrega
