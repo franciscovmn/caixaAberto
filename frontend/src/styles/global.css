@@ -325,6 +325,25 @@ a:focus-visible,
   justify-self: start;
 }
 
+/* Cada navegador desenha o indicador nativo do select de um jeito, seta simples no
+   Chrome e par de setas no Safari, com alturas diferentes. A aparencia e zerada e a
+   seta passa a ser a nossa, em SVG, para o campo ficar igual nos dois. */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%234a5568' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-2) center;
+  padding-right: calc(var(--space-3) + var(--space-3));
+}
+
+/* Campos de data, texto e select terminam na mesma altura, o que o desenho nativo
+   de cada navegador nao garante sozinho. */
+input,
+select,
+.seletor-mes__campo {
+  min-height: 2.5rem;
+}
+
 /* ---------- Seletor de mes ---------- */
 /* O Safari nao implementa input[type="month"] e degrada o campo para texto livre,
    entao a competencia usa um botao com popover proprio, no mesmo gesto do
