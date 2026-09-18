@@ -28,6 +28,28 @@ export function VisualizadorComprovante({
   // que a mao dariam bem mais codigo e mais chance de erro de acessibilidade.
   useEffect(() => {
     dialogo.current?.showModal();
+
+    // O dialog nativo deixa o fundo inerte para clique, mas nao trava a rolagem: com o
+    // comprovante aberto, a pagina atras continuava correndo sob o cursor. O bloqueio vai
+    // no html e no body porque quem rola muda conforme a folha de estilo, e a largura da
+    // barra volta como espacamento para a pagina nao pular ao travar.
+    const raiz = document.documentElement;
+    const larguraDaBarra = window.innerWidth - raiz.clientWidth;
+    const anterior = {
+      raiz: raiz.style.overflow,
+      corpo: document.body.style.overflow,
+      espacamento: document.body.style.paddingRight,
+    };
+
+    raiz.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    if (larguraDaBarra > 0) document.body.style.paddingRight = `${larguraDaBarra}px`;
+
+    return () => {
+      raiz.style.overflow = anterior.raiz;
+      document.body.style.overflow = anterior.corpo;
+      document.body.style.paddingRight = anterior.espacamento;
+    };
   }, []);
 
   return (

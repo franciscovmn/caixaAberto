@@ -1219,6 +1219,8 @@ dd {
   overflow: auto;
   background: var(--color-surface-alt);
   padding: var(--space-3);
+  /* Rolar o comprovante ate o fim nao passa a rolagem adiante para a pagina atras. */
+  overscroll-behavior: contain;
   /* Flex, e nao grid: numa grade a linha cresce com a imagem, entao a porcentagem do
      max-height resolvia contra a propria imagem e nunca limitava nada. */
   display: flex;

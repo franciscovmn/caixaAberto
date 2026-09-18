@@ -90,6 +90,23 @@ describe('VisualizadorComprovante', () => {
     );
   });
 
+  // A pagina atras continuava rolando sob o cursor com o comprovante aberto: o dialog
+  // nativo deixa o fundo inerte para clique, mas nao trava a rolagem.
+  it('trava a rolagem da página enquanto está aberto', async () => {
+    const usuario = userEvent.setup();
+    render(<Hospedeiro />);
+
+    expect(document.body.style.overflow).toBe('');
+
+    await usuario.click(screen.getByRole('button', { name: 'Ampliar' }));
+
+    expect(document.body.style.overflow).toBe('hidden');
+
+    await usuario.click(within(visualizador()).getByRole('button', { name: 'Fechar' }));
+
+    expect(document.body.style.overflow).toBe('');
+  });
+
   it('oferece o arquivo para baixar com o nome original', async () => {
     const usuario = userEvent.setup();
     render(<Hospedeiro />);
