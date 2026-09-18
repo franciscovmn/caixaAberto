@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { EstadoVazio } from '../components/ui/EstadoVazio';
+import { SeletorData } from '../components/ui/SeletorData';
 import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
 import { formatarData, formatarMoeda, rotuloTipo, valorComSinal } from '../lib/formato';
@@ -102,25 +103,9 @@ export function StatementPage() {
           <legend>Período</legend>
 
           <div className="filtros__campos">
-            <label>
-              De
-              <input
-                type="date"
-                value={dataInicio}
-                onChange={(event) => setDataInicio(event.target.value)}
-                required
-              />
-            </label>
+            <SeletorData rotulo="De" valor={dataInicio} aoSelecionar={setDataInicio} />
 
-            <label>
-              Até
-              <input
-                type="date"
-                value={dataFim}
-                onChange={(event) => setDataFim(event.target.value)}
-                required
-              />
-            </label>
+            <SeletorData rotulo="Até" valor={dataFim} aoSelecionar={setDataFim} />
 
             <button type="submit" data-variante="secundario">
               Consultar

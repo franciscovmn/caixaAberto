@@ -47,3 +47,57 @@ export function anoDoMes(mes: string): number {
 export function montarMes(ano: number, mes: number): string {
   return `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}`;
 }
+
+const PADRAO_DATA = /^\d{4}-\d{2}-\d{2}$/;
+
+export function dataEhValida(valor: string | null): valor is string {
+  if (typeof valor !== 'string' || !PADRAO_DATA.test(valor)) return false;
+
+  const { ano, mes, dia } = partesData(valor);
+  const data = new Date(ano, mes - 1, dia);
+
+  // 31/02 passa no formato mas nao existe: o Date normaliza para marco e a
+  // comparacao devolve o dia trocado.
+  return data.getFullYear() === ano && data.getMonth() === mes - 1 && data.getDate() === dia;
+}
+
+export function partesData(valor: string): { ano: number; mes: number; dia: number } {
+  const [ano, mes, dia] = valor.split('-').map(Number);
+
+  return { ano: ano ?? 0, mes: mes ?? 0, dia: dia ?? 0 };
+}
+
+export function montarData(ano: number, mes: number, dia: number): string {
+  return `${montarMes(ano, mes)}-${String(dia).padStart(2, '0')}`;
+}
+
+// Toda a aritmetica de calendario passa por aqui, com Date local e nunca toISOString,
+// que puxaria o dia para tras no fuso da aplicacao.
+export function deslocarDias(valor: string, passo: number): string {
+  const { ano, mes, dia } = partesData(valor);
+  const data = new Date(ano, mes - 1, dia + passo);
+
+  return montarData(data.getFullYear(), data.getMonth() + 1, data.getDate());
+}
+
+export function deslocarMeses(valor: string, passo: number): string {
+  const { ano, mes } = partesMes(valor);
+  const data = new Date(ano, mes - 1 + passo, 1);
+
+  return montarMes(data.getFullYear(), data.getMonth() + 1);
+}
+
+export function partesMes(valor: string): { ano: number; mes: number } {
+  const [ano, mes] = valor.split('-').map(Number);
+
+  return { ano: ano ?? 0, mes: mes ?? 0 };
+}
+
+export function diasDoMes(ano: number, mes: number): number {
+  return new Date(ano, mes, 0).getDate();
+}
+
+// Domingo e 0, como na primeira coluna do calendario.
+export function diaDaSemanaInicial(ano: number, mes: number): number {
+  return new Date(ano, mes - 1, 1).getDay();
+}

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { ApiError, apiRequest, apiUploadRequest } from '../lib/httpClient';
 import { CategorySelect } from './CategorySelect';
 import { ReceiptUploadField } from './ReceiptAttachment';
+import { SeletorData } from './ui/SeletorData';
 
 export type TransactionType = 'ENTRADA' | 'SAIDA';
 
@@ -194,20 +195,16 @@ export function TransactionForm({ tipo, onCriado }: TransactionFormProps) {
         {errosCampos.valor && <small role="alert">{errosCampos.valor}</small>}
       </label>
 
-      <label>
-        Data
-        <input
-          type="date"
-          value={data}
-          onChange={(event) => {
-            setData(event.target.value);
-            setErrosCampos((atuais) => ({ ...atuais, data: undefined }));
-          }}
-          required
-          aria-invalid={errosCampos.data ? true : undefined}
-        />
-        {errosCampos.data && <small role="alert">{errosCampos.data}</small>}
-      </label>
+      <SeletorData
+        rotulo="Data"
+        valor={data}
+        invalido={Boolean(errosCampos.data)}
+        mensagem={errosCampos.data && <small role="alert">{errosCampos.data}</small>}
+        aoSelecionar={(valor) => {
+          setData(valor);
+          setErrosCampos((atuais) => ({ ...atuais, data: undefined }));
+        }}
+      />
 
       <label>
         {rotulo.camposParte}

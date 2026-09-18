@@ -340,15 +340,15 @@ select {
    de cada navegador nao garante sozinho. */
 input,
 select,
-.seletor-mes__campo {
+.campo-popover__campo {
   min-height: 2.5rem;
 }
 
-/* ---------- Seletor de mes ---------- */
-/* O Safari nao implementa input[type="month"] e degrada o campo para texto livre,
-   entao a competencia usa um botao com popover proprio, no mesmo gesto do
-   calendario nativo que o campo de data abre nas demais telas. */
-.seletor-mes {
+/* ---------- Campos com painel de escolha ---------- */
+/* O Safari nao implementa input[type="month"] e degrada o campo para texto livre, e os
+   campos de data nativos ainda mudam de desenho conforme o navegador. Competencia e data
+   passam a ser escolhidas num painel proprio, com o mesmo gesto em qualquer navegador. */
+.campo-popover {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -357,7 +357,7 @@ select,
   font-weight: 500;
 }
 
-.seletor-mes__campo {
+.campo-popover__campo {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -375,30 +375,39 @@ select,
   transition: border-color var(--transicao);
 }
 
-.seletor-mes__campo:hover {
+.campo-popover__campo:hover {
   color: var(--color-ink);
   background: var(--color-surface);
   border-color: var(--color-ink-soft);
 }
 
-.seletor-mes__campo svg {
+/* Campo de filtro sem data escolhida: o texto e um marcador, nao um valor. */
+.campo-popover__campo[data-vazio] span {
+  color: var(--color-ink-soft);
+}
+
+.campo-popover__campo[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.campo-popover__campo svg {
   flex: none;
   color: var(--color-ink-soft);
 }
 
-.seletor-mes__painel {
+.campo-popover__painel {
   position: absolute;
   z-index: 20;
   top: calc(100% + var(--space-1));
   left: 0;
-  width: 232px;
+  width: max-content;
   padding: var(--space-2);
   background: var(--color-surface);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius);
 }
 
-.seletor-mes__ano {
+.campo-popover__cabecalho {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -408,18 +417,19 @@ select,
   border-bottom: 1px solid var(--color-rule-soft);
 }
 
-.seletor-mes__ano strong {
+.campo-popover__cabecalho strong {
   font-family: var(--font-mono);
   font-size: 0.9375rem;
   font-weight: 500;
 }
 
-.seletor-mes__navegar {
+.campo-popover__navegar {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
+  min-height: 0;
   padding: 0;
   color: var(--color-ink);
   background: transparent;
@@ -427,15 +437,56 @@ select,
   border-radius: var(--radius);
 }
 
-.seletor-mes__navegar:hover {
+.campo-popover__navegar:hover {
   color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+}
+
+/* O mes no cabecalho do calendario abre a grade de meses. */
+.campo-popover__competencia {
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.campo-popover__competencia:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+}
+
+.campo-popover__acoes {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-rule-soft);
+  text-align: right;
+}
+
+.campo-popover__acao {
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-accent);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.campo-popover__acao:hover {
+  color: var(--color-accent);
   background: var(--color-surface-alt);
   border-color: var(--color-rule);
 }
 
 .seletor-mes__grade {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 68px);
   gap: var(--space-1);
 }
 
@@ -450,21 +501,55 @@ select,
   border-radius: var(--radius);
 }
 
-.seletor-mes__mes:hover {
+.seletor-data__semana,
+.seletor-data__grade {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 2px;
+}
+
+.seletor-data__semana {
+  margin-bottom: var(--space-1);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  text-align: center;
+}
+
+.seletor-data__dia {
+  min-height: 0;
+  padding: var(--space-1) 0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.seletor-mes__mes:hover,
+.seletor-data__dia:hover {
   color: var(--color-ink);
   background: var(--color-surface-alt);
   border-color: var(--color-rule);
 }
 
-/* O mes corrente fica marcado pela cor de destaque, e o selecionado pelo preenchimento,
+/* O dia corrente fica marcado pela cor de destaque, e o escolhido pelo preenchimento,
    para que os dois estados convivam sem competir. */
-.seletor-mes__mes[data-hoje='true'] {
+.seletor-mes__mes[data-hoje],
+.seletor-data__dia[data-hoje] {
   color: var(--color-accent);
   border-color: var(--color-rule);
 }
 
 .seletor-mes__mes[aria-pressed='true'],
-.seletor-mes__mes[aria-pressed='true']:hover {
+.seletor-mes__mes[aria-pressed='true']:hover,
+.seletor-data__dia[aria-pressed='true'],
+.seletor-data__dia[aria-pressed='true']:hover {
   color: var(--color-bg);
   background: var(--color-ink);
   border-color: var(--color-ink);

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { EstadoVazio } from '../components/ui/EstadoVazio';
 import { IconeComprovante } from '../components/ui/IconeComprovante';
+import { SeletorData } from '../components/ui/SeletorData';
 import { TabelaEsqueleto } from '../components/ui/TabelaEsqueleto';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
 import { formatarData, formatarMoeda, rotuloTipo, valorComSinal } from '../lib/formato';
@@ -171,27 +172,21 @@ export function TransactionsListPage() {
           <legend>Filtrar</legend>
 
           <div className="filtros__campos">
-            <label>
-              De
-              <input
-                type="date"
-                value={filtros.dataInicio}
-                onChange={(event) =>
-                  setFiltros((atual) => ({ ...atual, dataInicio: event.target.value }))
-                }
-              />
-            </label>
+            {/* Os dois campos comecam vazios, porque a listagem abre sem recorte de
+                periodo, entao o painel oferece Limpar para desfazer a escolha. */}
+            <SeletorData
+              rotulo="De"
+              valor={filtros.dataInicio}
+              limpavel
+              aoSelecionar={(data) => setFiltros((atual) => ({ ...atual, dataInicio: data }))}
+            />
 
-            <label>
-              Até
-              <input
-                type="date"
-                value={filtros.dataFim}
-                onChange={(event) =>
-                  setFiltros((atual) => ({ ...atual, dataFim: event.target.value }))
-                }
-              />
-            </label>
+            <SeletorData
+              rotulo="Até"
+              valor={filtros.dataFim}
+              limpavel
+              aoSelecionar={(data) => setFiltros((atual) => ({ ...atual, dataFim: data }))}
+            />
 
             <label>
               Tipo
