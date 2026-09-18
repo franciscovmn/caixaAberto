@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 
+import { SeletorMes } from '../components/ui/SeletorMes';
 import { mesAtual } from '../lib/data';
-import { formatarMoeda } from '../lib/formato';
+import { formatarCompetencia, formatarMoeda, formatarNomeDoMes } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
@@ -18,18 +19,6 @@ interface MonthlySummaryResponse {
   };
 }
 
-function formatarMes(mes: string): string {
-  const [ano, mesNumero] = mes.split('-');
-  const data = new Date(Number(ano), Number(mesNumero) - 1, 1);
-  return data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-}
-
-function nomeDoMes(mes: string): string {
-  const [ano, mesNumero] = mes.split('-');
-  const data = new Date(Number(ano), Number(mesNumero) - 1, 1);
-  return data.toLocaleDateString('pt-BR', { month: 'long' });
-}
-
 // A comparacao com o mes anterior vira uma linha de apoio ao lado do numero,
 // no lugar de repetir o mesmo bloco de rotulos duas vezes na tela.
 function variacao(atual: string, anterior: string, mesAnterior: string): string {
@@ -42,14 +31,14 @@ function variacao(atual: string, anterior: string, mesAnterior: string): string 
 
   if (valorAnterior === 0) {
     return valorAtual === 0
-      ? `Sem movimento em ${nomeDoMes(mesAnterior)}`
-      : `Nada registrado em ${nomeDoMes(mesAnterior)}`;
+      ? `Sem movimento em ${formatarNomeDoMes(mesAnterior)}`
+      : `Nada registrado em ${formatarNomeDoMes(mesAnterior)}`;
   }
 
   const percentual = ((valorAtual - valorAnterior) / Math.abs(valorAnterior)) * 100;
   const sinal = percentual > 0 ? '+' : '';
 
-  return `${sinal}${percentual.toFixed(1).replace('.', ',')}% vs. ${nomeDoMes(mesAnterior)}`;
+  return `${sinal}${percentual.toFixed(1).replace('.', ',')}% vs. ${formatarNomeDoMes(mesAnterior)}`;
 }
 
 export function MonthlySummaryPage() {
@@ -97,7 +86,7 @@ export function MonthlySummaryPage() {
           <h1>Resumo financeiro mensal</h1>
           {resumo && (
             <p className="cabecalho-pagina__apoio">
-              Fechamento de {formatarMes(resumo.month)}, comparado ao mês anterior.
+              Fechamento de {formatarCompetencia(resumo.month)}, comparado ao mês anterior.
             </p>
           )}
         </div>
@@ -108,14 +97,7 @@ export function MonthlySummaryPage() {
           <legend>Competência</legend>
 
           <div className="filtros__campos">
-            <label>
-              Mês
-              <input
-                type="month"
-                value={mesSelecionado}
-                onChange={(event) => setMesSelecionado(event.target.value)}
-              />
-            </label>
+            <SeletorMes valor={mesSelecionado} aoSelecionar={setMesSelecionado} />
           </div>
         </fieldset>
       </form>
@@ -124,7 +106,7 @@ export function MonthlySummaryPage() {
       {erro && <p role="alert">{erro}</p>}
 
       {resumo && !carregando && (
-        <section className="numeros" aria-label={`Resumo de ${formatarMes(resumo.month)}`}>
+        <section className="numeros" aria-label={`Resumo de ${formatarCompetencia(resumo.month)}`}>
           <div className="numeros__item numeros__item--entrada">
             <span className="numeros__rotulo">Entradas</span>
             <strong className="numeros__valor">{formatarMoeda(resumo.entries)}</strong>
@@ -146,7 +128,7 @@ export function MonthlySummaryPage() {
             <strong className="numeros__valor">{formatarMoeda(resumo.balance)}</strong>
             <span className="numeros__apoio">
               {formatarMoeda(resumo.previousMonth.balance)} em{' '}
-              {nomeDoMes(resumo.previousMonth.month)}
+              {formatarNomeDoMes(resumo.previousMonth.month)}
             </span>
           </div>
         </section>

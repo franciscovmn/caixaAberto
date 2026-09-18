@@ -3,9 +3,10 @@ import { useParams, useSearchParams } from 'react-router-dom';
 
 import { AppFooter, AppHeader } from '../components/AppHeader';
 import { EstadoVazio } from '../components/ui/EstadoVazio';
+import { SeletorMes } from '../components/ui/SeletorMes';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
-import { mesAtual } from '../lib/data';
-import { formatarMoeda, rotuloTipo } from '../lib/formato';
+import { mesAtual, mesEhValido } from '../lib/data';
+import { formatarCompetencia, formatarMoeda, rotuloTipo } from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
@@ -26,16 +27,11 @@ interface PublicTransparencyResponse {
   privacy: { personalFieldsHidden: boolean };
 }
 
-function formatarCompetencia(mes: string): string {
-  const [ano, mesNumero] = mes.split('-');
-  const data = new Date(Number(ano), Number(mesNumero) - 1, 1);
-  return data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-}
-
 export function PublicTransparencyPage() {
   const { link } = useParams<{ link: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const mesInicial = searchParams.get('mes') ?? mesAtual();
+  const mesDaUrl = searchParams.get('mes');
+  const mesInicial = mesEhValido(mesDaUrl) ? mesDaUrl : mesAtual();
   const [mes, setMes] = useState(mesInicial);
   const [dados, setDados] = useState<PublicTransparencyResponse | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -130,14 +126,7 @@ export function PublicTransparencyPage() {
             <legend>Competência</legend>
 
             <div className="filtros__campos">
-              <label>
-                Mês
-                <input
-                  type="month"
-                  value={mes}
-                  onChange={(event) => handleMesChange(event.target.value)}
-                />
-              </label>
+              <SeletorMes valor={mes} aoSelecionar={handleMesChange} />
             </div>
           </fieldset>
         </form>

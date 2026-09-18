@@ -40,3 +40,33 @@ export function rotuloStatus(status: 'ATIVO' | 'ESTORNADO'): string {
 export function valorComSinal(tipo: 'ENTRADA' | 'SAIDA', valor: string): string {
   return `${tipo === 'ENTRADA' ? '+' : '-'}${formatarMoeda(valor)}`;
 }
+
+// A competencia aparece em dois registros: curta no campo de filtro, para alinhar com o
+// 01/09/2026 dos campos de data, e por extenso nos titulos e rotulos de leitura.
+export function formatarMesCurto(mes: string): string {
+  const [ano, numero] = mes.split('-');
+
+  return `${numero}/${ano}`;
+}
+
+export function formatarCompetencia(mes: string): string {
+  const [ano, numero] = mes.split('-');
+  const data = new Date(Number(ano), Number(numero) - 1, 1);
+
+  if (Number.isNaN(data.getTime())) {
+    return mes;
+  }
+
+  return data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+}
+
+export function formatarNomeDoMes(mes: string): string {
+  const [ano, numero] = mes.split('-');
+  const data = new Date(Number(ano), Number(numero) - 1, 1);
+
+  if (Number.isNaN(data.getTime())) {
+    return mes;
+  }
+
+  return data.toLocaleDateString('pt-BR', { month: 'long' });
+}

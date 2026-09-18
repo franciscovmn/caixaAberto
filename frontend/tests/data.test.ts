@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { dataISOLocal, hojeISO, mesAtual, primeiroDiaDoMesAtual } from '../src/lib/data';
+import {
+  anoDoMes,
+  dataISOLocal,
+  hojeISO,
+  mesAtual,
+  mesEhValido,
+  montarMes,
+  primeiroDiaDoMesAtual,
+} from '../src/lib/data';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -36,5 +44,30 @@ describe('datas no fuso da aplicação', () => {
     const meioDia = new Date('2026-09-17T12:00:00-03:00');
 
     expect(dataISOLocal(meioDia)).toBe('2026-09-17');
+  });
+});
+
+// A competencia chega da URL da pagina publica, editavel por qualquer visitante.
+describe('competência', () => {
+  it('aceita apenas YYYY-MM com mês de 01 a 12', () => {
+    expect(mesEhValido('2026-09')).toBe(true);
+    expect(mesEhValido('2026-01')).toBe(true);
+    expect(mesEhValido('2026-12')).toBe(true);
+    expect(mesEhValido('2026-0a')).toBe(false);
+    expect(mesEhValido('2026-13')).toBe(false);
+    expect(mesEhValido('2026-00')).toBe(false);
+    expect(mesEhValido('09/2026')).toBe(false);
+    expect(mesEhValido('')).toBe(false);
+    expect(mesEhValido(null)).toBe(false);
+  });
+
+  it('monta a competência com zero à esquerda', () => {
+    expect(montarMes(2026, 1)).toBe('2026-01');
+    expect(montarMes(2026, 11)).toBe('2026-11');
+  });
+
+  it('lê o ano da competência e cai no ano corrente quando ela não é numérica', () => {
+    expect(anoDoMes('2025-04')).toBe(2025);
+    expect(anoDoMes('abril')).toBe(Number(mesAtual().slice(0, 4)));
   });
 });

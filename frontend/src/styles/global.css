@@ -325,6 +325,132 @@ a:focus-visible,
   justify-self: start;
 }
 
+/* ---------- Seletor de mes ---------- */
+/* O Safari nao implementa input[type="month"] e degrada o campo para texto livre,
+   entao a competencia usa um botao com popover proprio, no mesmo gesto do
+   calendario nativo que o campo de data abre nas demais telas. */
+.seletor-mes {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.seletor-mes__campo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  align-self: stretch;
+  padding: var(--space-2);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  text-align: left;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+  transition: border-color var(--transicao);
+}
+
+.seletor-mes__campo:hover {
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border-color: var(--color-ink-soft);
+}
+
+.seletor-mes__campo svg {
+  flex: none;
+  color: var(--color-ink-soft);
+}
+
+.seletor-mes__painel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  width: 232px;
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+}
+
+.seletor-mes__ano {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-rule-soft);
+}
+
+.seletor-mes__ano strong {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.seletor-mes__navegar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.seletor-mes__navegar:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+}
+
+.seletor-mes__grade {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-1);
+}
+
+.seletor-mes__mes {
+  padding: var(--space-2) var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.seletor-mes__mes:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-alt);
+  border-color: var(--color-rule);
+}
+
+/* O mes corrente fica marcado pela cor de destaque, e o selecionado pelo preenchimento,
+   para que os dois estados convivam sem competir. */
+.seletor-mes__mes[data-hoje='true'] {
+  color: var(--color-accent);
+  border-color: var(--color-rule);
+}
+
+.seletor-mes__mes[aria-pressed='true'],
+.seletor-mes__mes[aria-pressed='true']:hover {
+  color: var(--color-bg);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
 /* ---------- Botoes ---------- */
 
 button {

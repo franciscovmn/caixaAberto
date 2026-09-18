@@ -29,3 +29,21 @@ export function mesAtual(): string {
 export function primeiroDiaDoMesAtual(): string {
   return `${mesAtual()}-01`;
 }
+
+const PADRAO_MES = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+// A competencia chega da URL da pagina publica, que qualquer visitante pode editar,
+// entao o formato e conferido antes de virar consulta na API.
+export function mesEhValido(valor: string | null): valor is string {
+  return typeof valor === 'string' && PADRAO_MES.test(valor);
+}
+
+export function anoDoMes(mes: string): number {
+  const ano = Number(mes.split('-')[0]);
+
+  return Number.isFinite(ano) && ano > 0 ? ano : Number(mesAtual().split('-')[0]);
+}
+
+export function montarMes(ano: number, mes: number): string {
+  return `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}`;
+}
