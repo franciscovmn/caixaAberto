@@ -367,6 +367,29 @@ Erros:
 - `403`: usuário sem vínculo ativo;
 - `404`: comprovante ou lançamento ausente na organização do contexto.
 
+### `POST /lancamentos/{id}/estorno`
+
+Exige autenticação e papel `TESOUREIRO`. Não recebe dados; propriedades enviadas no corpo são
+rejeitadas com `400`. Só um lançamento `ATIVO` pode ser estornado.
+
+O estorno não apaga o lançamento. Ele continua na listagem, no detalhe e no extrato com status
+`ESTORNADO`, e deixa de compor o saldo do extrato, o relatório por categoria, o resumo mensal e a
+transparência pública.
+
+Sucesso `200`:
+
+```json
+{ "id": "30", "status": "ESTORNADO", "dataEstorno": "2026-09-24T18:30:00.000Z" }
+```
+
+Erros:
+
+- `400`: ID inválido ou propriedade não reconhecida no corpo;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `404`: lançamento ausente ou pertencente a outra organização;
+- `409`: lançamento já estornado.
+
 ## Extrato e painéis
 
 ### `GET /extrato`
