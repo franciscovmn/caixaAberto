@@ -216,6 +216,34 @@ As rotas de membros trazem a organização no caminho. O `{id}` precisa ser a or
 contexto, resolvida pelo login e por `X-Organization-Id`; qualquer outra responde `404`, sem
 revelar se ela existe.
 
+### `GET /organizacoes/{id}/membros`
+
+Exige autenticação. Qualquer membro com vínculo ativo consulta. Retorna só os vínculos ativos da
+organização, ordenados pelo nome do usuário.
+
+Sucesso `200`:
+
+```json
+{
+  "dados": [
+    {
+      "id": "12",
+      "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org" },
+      "papel": "CONSULTOR",
+      "dataVinculo": "2026-09-24",
+      "ativo": true
+    }
+  ]
+}
+```
+
+Erros:
+
+- `400`: ID inválido ou parâmetro de consulta não reconhecido;
+- `401`: autenticação ausente ou inválida;
+- `403`: usuário sem vínculo ativo;
+- `404`: organização diferente da do contexto.
+
 ### `POST /organizacoes/{id}/membros`
 
 Exige autenticação e papel `TESOUREIRO`. Vincula um usuário já cadastrado, identificado pelo
