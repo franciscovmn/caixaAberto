@@ -39,13 +39,26 @@ export async function findActiveMembers(organizationId: bigint): Promise<MemberR
   });
 }
 
-export async function findUserIdByEmail(email: string): Promise<bigint | null> {
-  const user = await prisma.user.findUnique({
-    where: { email },
+// Um vinculo ativo em outra organizacao significa que a conta tambem responde a outro tesoureiro.
+export async function hasActiveMembershipOutside(
+  userId: bigint,
+  organizationId: bigint,
+): Promise<boolean> {
+  const membership = await prisma.membership.findFirst({
+    where: { userId, active: true, organizationId: { not: organizationId } },
     select: { id: true },
   });
 
-  return user?.id ?? null;
+  return membership !== null;
+}
+
+export async function findUserByEmail(
+  email: string,
+): Promise<{ id: bigint; active: boolean } | null> {
+  return prisma.user.findUnique({
+    where: { email },
+    select: { id: true, active: true },
+  });
 }
 
 export async function findMembership(

@@ -55,7 +55,9 @@ describe('permissão nas rotas de usuário', () => {
       .set('Authorization', consultor.authorization)
       .send({ password: 'senhaTrocadaIndevidamente' });
 
+    // A mensagem garante que quem barrou foi o papel: a regra de senha tambem responde 403.
     expect(response.status).toBe(403);
+    expect(response.body).toEqual({ erro: 'Acesso permitido apenas para TESOUREIRO' });
   });
 
   it('recusa exclusão de usuário para CONSULTOR', async () => {

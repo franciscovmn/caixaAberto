@@ -199,13 +199,22 @@ Compatibilidade atual: `POST /users` usa propriedades em inglês. Também existe
 Exige autenticação e papel `TESOUREIRO`. Aceita os mesmos campos de `POST /usuarios`, todos
 opcionais.
 
+A conta é única no sistema, mas o tesoureiro responde só pela própria organização. Por isso:
+
+- a senha só é alterada pelo próprio usuário. Como a rota exige `TESOUREIRO`, o consultor ainda
+  não tem como trocar a própria senha;
+- nome, e-mail e situação de quem tem vínculo ativo em outra organização também só são alterados
+  pelo próprio usuário;
+- ninguém inativa a própria conta por aqui, já que depois não conseguiria entrar para desfazer.
+
 Sucesso `200` devolve o usuário atualizado sem o hash da senha.
 
 Erros:
 
 - `400`: ID ou dados inválidos, ou e-mail já cadastrado;
 - `401`: autenticação ausente ou inválida;
-- `403`: papel sem permissão;
+- `403`: papel sem permissão, senha de outro usuário, ou conta de quem participa de outra
+  organização;
 - `404`: usuário inexistente.
 
 Compatibilidade atual: responde em `PUT /users/:id` com request e response em inglês.
@@ -249,7 +258,8 @@ Erros:
 Exige autenticação e papel `TESOUREIRO`. Vincula um usuário já cadastrado, identificado pelo
 e-mail. O vínculo nasce ativo, com papel `CONSULTOR` e a data de hoje no fuso da aplicação
 (`America/Fortaleza`). Quem já teve vínculo desativado volta pelo mesmo registro, reativado com
-papel `CONSULTOR` e a data de hoje.
+papel `CONSULTOR` e a data de hoje. Conta inativa não é vinculada: com vínculo ativo em duas
+organizações, nenhum tesoureiro conseguiria reativá-la.
 
 Request:
 
@@ -275,7 +285,7 @@ Erros:
 - `401`: autenticação ausente ou inválida;
 - `403`: papel sem permissão ou vínculo inativo;
 - `404`: organização diferente da do contexto, ou e-mail sem usuário cadastrado;
-- `409`: usuário já é membro ativo da organização.
+- `409`: usuário já é membro ativo da organização, ou conta inativa.
 
 ## Categorias
 

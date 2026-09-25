@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 
 import type { User } from '../generated/prisma/client.js';
 import { getContexto } from '../middlewares/load-context.js';
+import * as membershipRepository from '../repositories/membershipRepository.js';
 import userRepository from '../repositories/userRepository.js';
 
 function serializeUser(user: User) {
@@ -114,15 +115,45 @@ async function updateUser(req: Request, res: Response) {
     //const id = BigInt(req.params.id)
 
     const { name, email, password, active } = req.body;
+    const { usuarioId, organizacaoId } = getContexto(req);
 
-    const existingUser = await userRepository.findByIdInOrganization(
-      id,
-      getContexto(req).organizacaoId,
-    );
+    const existingUser = await userRepository.findByIdInOrganization(id, organizacaoId);
 
     if (!existingUser) {
       return res.status(404).json({
         erro: 'Usuário não encontrado',
+      });
+    }
+
+    // A conta e global, mas o tesoureiro so responde pela propria organizacao. Sem estas
+    // conferencias, vincular alguem pelo e-mail bastava para trocar a senha dessa pessoa e entrar
+    // como ela nas outras organizacoes em que atua.
+    const isOwnAccount = id === usuarioId;
+    const changesAccount = name !== undefined || email !== undefined || active !== undefined;
+
+    if (password !== undefined && !isOwnAccount) {
+      return res.status(403).json({
+        erro: 'A senha só pode ser alterada pelo próprio usuário',
+      });
+    }
+
+    // Quem inativa a propria conta nao consegue mais entrar para desfazer, e se atuar em duas
+    // organizacoes nenhum tesoureiro pode reativa-la.
+    if (isOwnAccount && active === false) {
+      return res.status(403).json({
+        erro: 'O usuário não pode inativar a própria conta',
+      });
+    }
+
+    // So consulta os outros vinculos quando ha dado da conta a mudar, para que um PUT vazio nao
+    // revele se o membro participa de outra organizacao.
+    if (
+      !isOwnAccount &&
+      changesAccount &&
+      (await membershipRepository.hasActiveMembershipOutside(id, organizacaoId))
+    ) {
+      return res.status(403).json({
+        erro: 'Os dados da conta de quem participa de outra organização só podem ser alterados pelo próprio usuário',
       });
     }
 
