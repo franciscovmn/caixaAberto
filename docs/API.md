@@ -298,6 +298,34 @@ Erros:
 - `401`: autenticação ausente ou inválida;
 - `403`: usuário sem vínculo ativo.
 
+### `POST /categorias`
+
+Exige autenticação e papel `TESOUREIRO`. Cadastra uma categoria ativa na organização do contexto.
+`descricao` é opcional e, quando omitida, é gravada vazia.
+
+Request:
+
+```json
+{ "nome": "Transporte", "descricao": "Ônibus e combustível", "tipo": "SAIDA" }
+```
+
+Sucesso `201`:
+
+```json
+{ "id": "11", "nome": "Transporte", "descricao": "Ônibus e combustível", "tipo": "SAIDA" }
+```
+
+O nome não pode repetir o de outra categoria do mesmo tipo na organização. A comparação não
+diferencia maiúsculas nem espaços nas pontas, e vale também contra categoria desativada, cujo nome
+continua ocupado.
+
+Erros:
+
+- `400`: dados inválidos ou propriedade não reconhecida no corpo;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `409`: já existe categoria com esse nome e tipo, ativa ou desativada.
+
 ## Lançamentos
 
 ### `POST /lancamentos`
