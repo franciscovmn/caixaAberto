@@ -151,6 +151,17 @@ describe('vincular usuário à organização (US09)', () => {
     expect(response.body.usuario.email).toBe('maria@grupo.org');
   });
 
+  it('recusa vincular conta inativa', async () => {
+    const { organization, authorization } = await criarOrganizacao();
+    await createUser({ email: 'maria@grupo.org', active: false });
+
+    const response = await vincular(organization.id, authorization, { email: 'maria@grupo.org' });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({ erro: 'Usuário inativo não pode ser vinculado' });
+    expect(await contarVinculos(organization.id)).toBe(1);
+  });
+
   it('responde 404 para e-mail sem usuário cadastrado', async () => {
     const { organization, authorization } = await criarOrganizacao();
 

@@ -7,6 +7,7 @@ import type { MemberRecord } from '../repositories/membershipRepository.js';
 
 const USER_NOT_FOUND = 'Usuário não encontrado';
 const ALREADY_ACTIVE_MEMBER = 'Usuário já é membro ativo da organização';
+const INACTIVE_USER = 'Usuário inativo não pode ser vinculado';
 
 // Todo vinculo comeca como consultor. Dar o papel de tesoureiro e a alteracao de papel da US10.
 const DEFAULT_ROLE: Role = 'CONSULTOR';
@@ -50,12 +51,19 @@ export async function listActiveMembers(organizationId: bigint): Promise<MemberL
 }
 
 export async function addMember(organizationId: bigint, email: string): Promise<MemberResponse> {
-  const userId = await membershipRepository.findUserIdByEmail(email);
+  const user = await membershipRepository.findUserByEmail(email);
 
-  if (userId === null) {
+  if (!user) {
     throw new AppError(404, USER_NOT_FOUND);
   }
 
+  // Conta inativa nao entra em outra organizacao: com vinculo ativo em duas, nenhum tesoureiro
+  // poderia reativa-la, e ela mesma nao consegue entrar para isso.
+  if (!user.active) {
+    throw new AppError(409, INACTIVE_USER);
+  }
+
+  const userId = user.id;
   const linkedAt = todayCivilDate();
   const existing = await membershipRepository.findMembership(userId, organizationId);
 
