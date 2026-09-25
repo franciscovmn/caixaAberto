@@ -17,6 +17,9 @@ export type TransactionStatus = (typeof transactionStatuses)[number];
 // possam divergir.
 export const BALANCE_AFFECTING_STATUS = 'ATIVO' as const satisfies TransactionStatus;
 
+// Lancamento nunca e apagado: o estorno troca o status, e a linha continua nas consultas.
+export const REVERSED_STATUS = 'ESTORNADO' as const satisfies TransactionStatus;
+
 export function affectsBalance(status: string): boolean {
   return status === BALANCE_AFFECTING_STATUS;
 }

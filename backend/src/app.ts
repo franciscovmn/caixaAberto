@@ -20,6 +20,7 @@ import reportRouter from './routers/reportRouter.js';
 import statementRouter from './routers/statementRouter.js';
 import userRouter from './routers/userRouter.js';
 import transactionListRouter from './routers/transactionListRouter.js';
+import transactionReversalRouter from './routers/transactionReversalRouter.js';
 import transactionRouter from './routers/transactionRouter.js';
 import transparencyRouter from './routers/transparencyRouter.js';
 
@@ -81,6 +82,7 @@ export function createApp() {
   app.use('/categorias', categoryRouter);
   app.use('/lancamentos', transactionListRouter);
   app.use('/lancamentos', receiptRouter);
+  app.use('/lancamentos', transactionReversalRouter);
   app.use('/extrato', statementRouter);
   app.use('/relatorios', reportRouter);
   app.use('/transactions', transactionRouter);
