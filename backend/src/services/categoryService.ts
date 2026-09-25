@@ -145,3 +145,16 @@ export async function updateCategory(
 
   return toDetailResponse(updated);
 }
+
+// A exclusao e logica: a categoria sai dos formularios, mas os lancamentos que ja a usam continuam
+// mostrando o nome dela, e o relatorio segue somando o que foi registrado nela.
+export async function deactivateCategory(
+  organizationId: bigint,
+  categoryId: bigint,
+): Promise<void> {
+  const deactivated = await categoryRepository.deactivateCategory(categoryId, organizationId);
+
+  if (!deactivated) {
+    throw new AppError(404, CATEGORY_NOT_FOUND);
+  }
+}

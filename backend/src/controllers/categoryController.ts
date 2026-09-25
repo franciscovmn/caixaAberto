@@ -103,3 +103,17 @@ export async function updateCategory(
     next(error);
   }
 }
+
+export async function deleteCategory(
+  request: Request,
+  response: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { id } = categoryIdParamSchema.parse(request.params);
+    await categoryService.deactivateCategory(getContexto(request).organizacaoId, id);
+    response.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
