@@ -83,6 +83,17 @@ export async function hasTransactions(categoryId: bigint): Promise<boolean> {
   return transaction !== null;
 }
 
+// A condicao de ativa vai no proprio UPDATE: excluir de novo, ou excluir categoria de outra
+// organizacao, nao altera nada e o chamador recebe false.
+export async function deactivateCategory(id: bigint, organizationId: bigint): Promise<boolean> {
+  const { count } = await prisma.category.updateMany({
+    where: { id, organizationId, active: true },
+    data: { active: false },
+  });
+
+  return count === 1;
+}
+
 // So a categoria ainda ativa e alterada: se ela foi excluida entre a leitura e a gravacao, nada
 // muda e o chamador recebe null.
 export async function updateActiveCategory(
