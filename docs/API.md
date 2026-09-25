@@ -326,6 +326,27 @@ Erros:
 - `403`: papel sem permissão ou vínculo inativo;
 - `409`: já existe categoria com esse nome e tipo, ativa ou desativada.
 
+### `PUT /categorias/{id}`
+
+Exige autenticação e papel `TESOUREIRO`. Aceita os mesmos campos de `POST /categorias`, todos
+opcionais, e pelo menos um deles. Os lançamentos guardam a categoria pelo ID, então um novo nome já
+aparece no histórico, sem alterar nenhum valor.
+
+O nome segue a mesma regra do cadastro, sem contar a própria categoria. O tipo só pode mudar
+enquanto nenhum lançamento usa a categoria. Desativar não é feito aqui, e sim por
+`DELETE /categorias/{id}`.
+
+Sucesso `200` devolve a categoria no formato do cadastro.
+
+Erros:
+
+- `400`: ID inválido, corpo sem campos ou propriedade não reconhecida no corpo;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `404`: categoria inexistente, desativada ou de outra organização;
+- `409`: nome já usado por outra categoria do mesmo tipo, ou troca de tipo de categoria com
+  lançamentos.
+
 ## Lançamentos
 
 ### `POST /lancamentos`

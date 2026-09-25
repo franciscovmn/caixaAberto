@@ -50,11 +50,58 @@ export async function findCategoryByName(
   organizationId: bigint,
   name: string,
   type: CategoryType,
+  exceptId?: bigint,
 ): Promise<{ id: bigint; active: boolean } | null> {
   return prisma.category.findFirst({
-    where: { organizationId, type, name: { equals: name, mode: 'insensitive' } },
+    where: {
+      organizationId,
+      type,
+      name: { equals: name, mode: 'insensitive' },
+      ...(exceptId === undefined ? {} : { id: { not: exceptId } }),
+    },
     select: { id: true, active: true },
     orderBy: [{ active: 'desc' }, { id: 'asc' }],
+  });
+}
+
+export async function findActiveCategory(
+  id: bigint,
+  organizationId: bigint,
+): Promise<CategoryDetailRecord | null> {
+  return prisma.category.findFirst({
+    where: { id, organizationId, active: true },
+    select: categoryDetailSelection,
+  });
+}
+
+export async function hasTransactions(categoryId: bigint): Promise<boolean> {
+  const transaction = await prisma.transaction.findFirst({
+    where: { categoryId },
+    select: { id: true },
+  });
+
+  return transaction !== null;
+}
+
+// So a categoria ainda ativa e alterada: se ela foi excluida entre a leitura e a gravacao, nada
+// muda e o chamador recebe null.
+export async function updateActiveCategory(
+  id: bigint,
+  organizationId: bigint,
+  data: Omit<NewCategoryData, 'organizationId'>,
+): Promise<CategoryDetailRecord | null> {
+  const { count } = await prisma.category.updateMany({
+    where: { id, organizationId, active: true },
+    data,
+  });
+
+  if (count === 0) {
+    return null;
+  }
+
+  return prisma.category.findUniqueOrThrow({
+    where: { id },
+    select: categoryDetailSelection,
   });
 }
 
