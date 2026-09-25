@@ -210,6 +210,45 @@ Erros:
 
 Compatibilidade atual: responde em `PUT /users/:id` com request e response em inglês.
 
+## Membros
+
+As rotas de membros trazem a organização no caminho. O `{id}` precisa ser a organização do
+contexto, resolvida pelo login e por `X-Organization-Id`; qualquer outra responde `404`, sem
+revelar se ela existe.
+
+### `POST /organizacoes/{id}/membros`
+
+Exige autenticação e papel `TESOUREIRO`. Vincula um usuário já cadastrado, identificado pelo
+e-mail. O vínculo nasce ativo, com papel `CONSULTOR` e a data de hoje no fuso da aplicação
+(`America/Fortaleza`). Quem já teve vínculo desativado volta pelo mesmo registro, reativado com
+papel `CONSULTOR` e a data de hoje.
+
+Request:
+
+```json
+{ "email": "maria@grupo.org" }
+```
+
+Sucesso `201`:
+
+```json
+{
+  "id": "12",
+  "usuario": { "id": "5", "nome": "Maria", "email": "maria@grupo.org" },
+  "papel": "CONSULTOR",
+  "dataVinculo": "2026-09-24",
+  "ativo": true
+}
+```
+
+Erros:
+
+- `400`: ID ou e-mail inválido, ou propriedade não reconhecida no corpo;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `404`: organização diferente da do contexto, ou e-mail sem usuário cadastrado;
+- `409`: usuário já é membro ativo da organização.
+
 ## Categorias
 
 ### `GET /categorias`
