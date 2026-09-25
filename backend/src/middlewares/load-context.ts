@@ -1,9 +1,13 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { z } from 'zod';
 
 import { prisma } from '../database/client.js';
 import { roles, type AuthContext, type Role } from '../domain/auth-context.js';
 import { AppError } from '../errors/app-error.js';
+import { identifierSchema } from '../schemas/identifier.js';
 import type { AuthRequest } from './auth.js';
+
+const organizationParamSchema = z.object({ id: identifierSchema });
 
 function parseIdentifier(value: string): bigint | null {
   if (!/^\d+$/.test(value)) {
@@ -124,6 +128,33 @@ export function getContexto(request: Request): AuthContext {
   }
 
   return request.contexto;
+}
+
+// Rota com a organizacao no caminho so atende a organizacao do contexto. Qualquer outra responde
+// como inexistente, sem revelar se ela existe ou se o usuario tem vinculo com ela.
+export function requireContextOrganization(
+  request: Request,
+  _response: Response,
+  next: NextFunction,
+): void {
+  if (!request.contexto) {
+    next(new AppError(401, 'Contexto autenticado ausente'));
+    return;
+  }
+
+  const params = organizationParamSchema.safeParse(request.params);
+
+  if (!params.success) {
+    next(params.error);
+    return;
+  }
+
+  if (params.data.id !== request.contexto.organizacaoId) {
+    next(new AppError(404, 'Organização não encontrada'));
+    return;
+  }
+
+  next();
 }
 
 export function requireRole(role: Role): RequestHandler {
