@@ -347,6 +347,21 @@ Erros:
 - `409`: nome já usado por outra categoria do mesmo tipo, ou troca de tipo de categoria com
   lançamentos.
 
+### `DELETE /categorias/{id}`
+
+Exige autenticação e papel `TESOUREIRO`. A exclusão é lógica: a categoria passa a inativa, some de
+`GET /categorias` e deixa de aceitar lançamentos novos. Os lançamentos que já a usam continuam
+exibindo o nome dela, e o relatório por categoria segue somando o que foi registrado nela.
+
+Sucesso `204`, sem corpo.
+
+Erros:
+
+- `400`: ID inválido;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `404`: categoria inexistente, já desativada ou de outra organização.
+
 ## Lançamentos
 
 ### `POST /lancamentos`
