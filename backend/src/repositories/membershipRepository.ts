@@ -31,6 +31,14 @@ const memberSelection = {
   },
 } satisfies Prisma.MembershipSelect;
 
+export async function findActiveMembers(organizationId: bigint): Promise<MemberRecord[]> {
+  return prisma.membership.findMany({
+    where: { organizationId, active: true },
+    select: memberSelection,
+    orderBy: [{ user: { name: 'asc' } }, { id: 'asc' }],
+  });
+}
+
 export async function findUserIdByEmail(email: string): Promise<bigint | null> {
   const user = await prisma.user.findUnique({
     where: { email },
