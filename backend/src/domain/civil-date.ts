@@ -13,3 +13,20 @@ export function isExistingCivilDate(value: string): boolean {
 export function formatCivilDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+// A aplicacao opera no fuso de Fortaleza, mas o servidor pode rodar em UTC, e entre 21h e
+// meia-noite o dia pelo relogio UTC ja e o seguinte. Por isso o dia sai do fuso explicito.
+const civilDateInApplicationTimeZone = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Fortaleza',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function todayCivilDate(now: Date = new Date()): Date {
+  const parts = Object.fromEntries(
+    civilDateInApplicationTimeZone.formatToParts(now).map((part) => [part.type, part.value]),
+  );
+
+  return toUtcDate(`${parts.year}-${parts.month}-${parts.day}`);
+}

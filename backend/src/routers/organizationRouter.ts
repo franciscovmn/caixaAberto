@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { addMember } from '../controllers/membershipController.js';
 import { getCurrentContext } from '../controllers/organizationContextController.js';
 import {
   changePublicLinkState,
@@ -7,7 +8,11 @@ import {
   getPublicLink,
 } from '../controllers/organizationPublicLinkController.js';
 import { authenticate } from '../middlewares/auth.js';
-import { loadContext, requireRole } from '../middlewares/load-context.js';
+import {
+  loadContext,
+  requireContextOrganization,
+  requireRole,
+} from '../middlewares/load-context.js';
 
 const router = Router();
 
@@ -34,6 +39,17 @@ router.patch(
   loadContext,
   requireRole('TESOUREIRO'),
   changePublicLinkState,
+);
+
+// A organizacao do caminho e conferida antes do papel: outra organizacao responde 404 para qualquer
+// papel, e so depois o consultor recebe 403.
+router.post(
+  '/:id/membros',
+  authenticate,
+  loadContext,
+  requireContextOrganization,
+  requireRole('TESOUREIRO'),
+  addMember,
 );
 
 export default router;
