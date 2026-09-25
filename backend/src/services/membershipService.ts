@@ -33,8 +33,20 @@ function toResponse(member: MemberRecord): MemberResponse {
   };
 }
 
+export interface MemberListResponse {
+  dados: MemberResponse[];
+}
+
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+}
+
+// Membro desvinculado sai da lista, mas o registro continua no banco: e ele que volta ativo quando
+// a pessoa e vinculada de novo.
+export async function listActiveMembers(organizationId: bigint): Promise<MemberListResponse> {
+  const members = await membershipRepository.findActiveMembers(organizationId);
+
+  return { dados: members.map(toResponse) };
 }
 
 export async function addMember(organizationId: bigint, email: string): Promise<MemberResponse> {

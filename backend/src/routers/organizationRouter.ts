@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { addMember } from '../controllers/membershipController.js';
+import { addMember, listMembers } from '../controllers/membershipController.js';
 import { getCurrentContext } from '../controllers/organizationContextController.js';
 import {
   changePublicLinkState,
@@ -40,6 +40,9 @@ router.patch(
   requireRole('TESOUREIRO'),
   changePublicLinkState,
 );
+
+// Consultar os membros e direito de qualquer vinculo ativo, entao sem requireRole.
+router.get('/:id/membros', authenticate, loadContext, requireContextOrganization, listMembers);
 
 // A organizacao do caminho e conferida antes do papel: outra organizacao responde 404 para qualquer
 // papel, e so depois o consultor recebe 403.
