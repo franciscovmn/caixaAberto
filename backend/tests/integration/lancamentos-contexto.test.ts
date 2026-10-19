@@ -131,4 +131,73 @@ describe('organização dos lançamentos vem do contexto autenticado', () => {
     expect(response.status).toBe(201);
     expect(response.body.organizationId).toBe(organization.id.toString());
   });
+
+  it('Cenário 1 - selecionar organização por X-Organization-Id', async () => {
+    const user = await createUser();
+    const organizacaoA = await createOrganization();
+    const organizacaoB = await createOrganization();
+    await createMembership({ userId: user.id, organizationId: organizacaoA.id });
+    await createMembership({ userId: user.id, organizationId: organizacaoB.id });
+    const authorization = createAuthorizationHeader(user);
+
+    const categoriaA = await createCategory({ organizationId: organizacaoA.id, type: 'ENTRADA' });
+    const categoriaB = await createCategory({ organizationId: organizacaoB.id, type: 'ENTRADA' });
+
+    await createTransaction({
+      organizationId: organizacaoA.id,
+      userId: user.id,
+      categoryId: categoriaA.id,
+      type: 'ENTRADA',
+      description: 'Lançamento da organização A',
+      amount: '50.00',
+    });
+
+    const cadastro = await request(createApp())
+      .post('/transactions')
+      .set('Authorization', authorization)
+      .set('X-Organization-Id', organizacaoB.id.toString())
+      .send({
+        categoryId: categoriaB.id.toString(),
+        amount: '90.00',
+        date: '2026-09-15',
+        description: 'Lançamento da organização B',
+        tipo: 'ENTRADA',
+      });
+
+    expect(cadastro.status).toBe(201);
+    expect(cadastro.body.organizationId).toBe(organizacaoB.id.toString());
+
+    const listaA = await request(createApp())
+      .get('/lancamentos')
+      .set('Authorization', authorization)
+      .set('X-Organization-Id', organizacaoA.id.toString());
+
+    expect(listaA.status).toBe(200);
+    expect(listaA.body.dados).toHaveLength(1);
+    expect(listaA.body.dados[0].descricao).toBe('Lançamento da organização A');
+
+    const listaB = await request(createApp())
+      .get('/lancamentos')
+      .set('Authorization', authorization)
+      .set('X-Organization-Id', organizacaoB.id.toString());
+
+    expect(listaB.status).toBe(200);
+    expect(listaB.body.dados).toHaveLength(1);
+    expect(listaB.body.dados[0].descricao).toBe('Lançamento da organização B');
+  });
+
+  it('Cenário 2 - acesso a organização sem vínculo', async () => {
+    const { authorization } = await createOrganizationWithTreasurer();
+    const organizacaoSemVinculo = await createOrganization();
+
+    const response = await request(createApp())
+      .get('/lancamentos')
+      .set('Authorization', authorization)
+      .set('X-Organization-Id', organizacaoSemVinculo.id.toString());
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      erro: 'Usuário não possui vínculo ativo com a organização selecionada',
+    });
+  });
 });
