@@ -16,9 +16,28 @@ const TRANSPARENCIA = {
       },
       month: '2026-09',
       totals: { entries: '1960.00', exits: '2730.75', balance: '-770.75' },
+      accumulatedBalance: '4125.40',
       byCategory: [
         { type: 'ENTRADA', category: 'Mensalidade', total: '1320.00', count: 2 },
         { type: 'SAIDA', category: 'Buffet', total: '2200.00', count: 1 },
+      ],
+      statement: [
+        {
+          id: '31',
+          date: '2026-09-04',
+          type: 'ENTRADA',
+          amount: '660.00',
+          description: 'Mensalidades da turma A',
+          category: { id: '1', name: 'Mensalidade' },
+        },
+        {
+          id: '32',
+          date: '2026-09-12',
+          type: 'SAIDA',
+          amount: '2200.00',
+          description: 'Sinal do buffet',
+          category: { id: '2', name: 'Buffet' },
+        },
       ],
       privacy: { personalFieldsHidden: true },
     },
@@ -50,6 +69,22 @@ describe('PublicTransparencyPage', () => {
     expect(totais).toHaveTextContent(/R\$\s*1\.960,00/);
     expect(totais).toHaveTextContent(/R\$\s*2\.730,75/);
     expect(totais).toHaveTextContent(/-R\$\s*770,75/);
+    expect(totais).toHaveTextContent(/Saldo acumulado\s*R\$\s*4\.125,40\s*até o fim de setembro/);
+  });
+
+  it('lista os lançamentos do mês com data, descrição, categoria e valor', async () => {
+    stubApi(TRANSPARENCIA);
+
+    renderizar();
+
+    const tabela = await screen.findByRole('region', { name: 'Lançamentos do mês' });
+    const linhas = within(tabela).getAllByRole('row').slice(1);
+
+    expect(linhas).toHaveLength(2);
+    expect(linhas[0]).toHaveTextContent('04/09/2026');
+    expect(linhas[0]).toHaveTextContent('Mensalidades da turma A');
+    expect(linhas[0]).toHaveTextContent('Mensalidade');
+    expect(within(linhas[1]!).getByLabelText(/Saída de R\$\s*2\.200,00/)).toBeInTheDocument();
   });
 
   it('traduz o tipo da categoria em vez de expor o enum', async () => {
@@ -94,7 +129,9 @@ describe('PublicTransparencyPage', () => {
           organization: { name: 'Comissão de Formatura', description: 'Prestação de contas.' },
           month: '2025-01',
           totals: { entries: '0', exits: '0', balance: '0' },
+          accumulatedBalance: '0',
           byCategory: [],
+          statement: [],
           privacy: { personalFieldsHidden: true },
         },
       },

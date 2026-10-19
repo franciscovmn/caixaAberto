@@ -215,6 +215,132 @@ describe('transparência pública (US32)', () => {
     });
   });
 
+  it('saldo acumulado soma os meses anteriores e para no fim do mês consultado', async () => {
+    const { base, entrada, saida } = await criarOrganizacaoPublica();
+    await createTransaction({
+      ...base,
+      categoryId: entrada.id,
+      type: 'ENTRADA',
+      amount: '500.00',
+      date: new Date('2026-07-15T00:00:00.000Z'),
+    });
+    await createTransaction({
+      ...base,
+      categoryId: saida.id,
+      type: 'SAIDA',
+      amount: '120.00',
+      date: new Date('2026-08-20T00:00:00.000Z'),
+    });
+    await createTransaction({
+      ...base,
+      categoryId: entrada.id,
+      type: 'ENTRADA',
+      amount: '80.00',
+      date: new Date('2026-09-30T00:00:00.000Z'),
+    });
+    // Estornado e lancamento do mes seguinte nao entram no saldo de setembro.
+    await createTransaction({
+      ...base,
+      categoryId: entrada.id,
+      type: 'ENTRADA',
+      amount: '999.00',
+      date: new Date('2026-08-01T00:00:00.000Z'),
+      status: 'ESTORNADO',
+      reversedAt: new Date('2026-08-02T10:00:00.000Z'),
+    });
+    await createTransaction({
+      ...base,
+      categoryId: saida.id,
+      type: 'SAIDA',
+      amount: '40.00',
+      date: new Date('2026-10-01T00:00:00.000Z'),
+    });
+
+    const setembro = await request(createApp())
+      .get('/transparency/token-publico-us32')
+      .query({ mes: '2026-09' });
+
+    expect(setembro.status).toBe(200);
+    expect(setembro.body.totals.balance).toBe('80');
+    expect(setembro.body.accumulatedBalance).toBe('460');
+
+    const agosto = await request(createApp())
+      .get('/transparency/token-publico-us32')
+      .query({ mes: '2026-08' });
+
+    expect(agosto.body.accumulatedBalance).toBe('380');
+  });
+
+  it('lista os lançamentos ativos do mês sem dados pessoais', async () => {
+    const { user, base, entrada, saida } = await criarOrganizacaoPublica();
+    const mensalidade = await createTransaction({
+      ...base,
+      categoryId: entrada.id,
+      type: 'ENTRADA',
+      amount: '300.00',
+      date: new Date('2026-09-03T00:00:00.000Z'),
+      description: 'Mensalidades de setembro',
+      source: 'Responsável pelo aluno Pedro',
+    });
+    const compra = await createTransaction({
+      ...base,
+      categoryId: saida.id,
+      type: 'SAIDA',
+      amount: '125.50',
+      date: new Date('2026-09-10T00:00:00.000Z'),
+      description: 'Compra de faixas',
+      source: null,
+      recipient: 'Papelaria do Seu Antônio',
+    });
+    await createTransaction({
+      ...base,
+      categoryId: saida.id,
+      type: 'SAIDA',
+      amount: '999.00',
+      date: new Date('2026-09-05T00:00:00.000Z'),
+      description: 'Lançamento estornado',
+      status: 'ESTORNADO',
+      reversedAt: new Date('2026-09-06T10:00:00.000Z'),
+    });
+    await createTransaction({
+      ...base,
+      categoryId: entrada.id,
+      type: 'ENTRADA',
+      date: new Date('2026-08-31T00:00:00.000Z'),
+      description: 'Lançamento de agosto',
+    });
+
+    const response = await request(createApp())
+      .get('/transparency/token-publico-us32')
+      .query({ mes: '2026-09' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.statement).toEqual([
+      {
+        id: mensalidade.id.toString(),
+        date: '2026-09-03',
+        type: 'ENTRADA',
+        amount: '300',
+        description: 'Mensalidades de setembro',
+        category: { id: entrada.id.toString(), name: 'Mensalidades' },
+      },
+      {
+        id: compra.id.toString(),
+        date: '2026-09-10',
+        type: 'SAIDA',
+        amount: '125.5',
+        description: 'Compra de faixas',
+        category: { id: saida.id.toString(), name: 'Material' },
+      },
+    ]);
+
+    const corpo = JSON.stringify(response.body);
+    expect(corpo).not.toContain('Pedro');
+    expect(corpo).not.toContain('Antônio');
+    expect(corpo).not.toContain(user.name);
+    expect(corpo).not.toContain(user.email);
+  });
+
   it('Cenário 7 - mês inválido retorna 400', async () => {
     await criarOrganizacaoPublica();
 

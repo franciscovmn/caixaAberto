@@ -6,7 +6,13 @@ import { EstadoVazio } from '../components/ui/EstadoVazio';
 import { SeletorMes } from '../components/ui/SeletorMes';
 import { TabelaRolavel } from '../components/ui/TabelaRolavel';
 import { mesAtual, mesEhValido } from '../lib/data';
-import { formatarCompetencia, formatarMoeda, rotuloTipo } from '../lib/formato';
+import {
+  formatarCompetencia,
+  formatarData,
+  formatarMoeda,
+  rotuloTipo,
+  valorComSinal,
+} from '../lib/formato';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
@@ -19,11 +25,22 @@ interface CategoryAggregate {
   count: number;
 }
 
+interface StatementItem {
+  id: string;
+  date: string;
+  type: TransactionType;
+  amount: string;
+  description: string;
+  category: { id: string; name: string };
+}
+
 interface PublicTransparencyResponse {
   organization: { name: string; description: string };
   month: string;
   totals: { entries: string; exits: string; balance: string };
+  accumulatedBalance: string;
   byCategory: CategoryAggregate[];
+  statement: StatementItem[];
   privacy: { personalFieldsHidden: boolean };
 }
 
@@ -140,10 +157,17 @@ export function PublicTransparencyPage() {
             <span className="numeros__rotulo">Saídas</span>
             <strong className="numeros__valor">{formatarMoeda(dados.totals.exits)}</strong>
           </div>
-          <div className="numeros__item numeros__item--saldo">
-            <span className="numeros__rotulo">Saldo</span>
+          <div className="numeros__item">
+            <span className="numeros__rotulo">Saldo do mês</span>
             <strong className="numeros__valor">{formatarMoeda(dados.totals.balance)}</strong>
             <span className="numeros__apoio">{formatarCompetencia(dados.month)}</span>
+          </div>
+          {/* O que o visitante quer saber primeiro e quanto ha em caixa, e nao so o
+              resultado do mes: por isso o acumulado leva o destaque. */}
+          <div className="numeros__item numeros__item--saldo">
+            <span className="numeros__rotulo">Saldo acumulado</span>
+            <strong className="numeros__valor">{formatarMoeda(dados.accumulatedBalance)}</strong>
+            <span className="numeros__apoio">até o fim de {formatarCompetencia(dados.month)}</span>
           </div>
         </section>
 
@@ -153,45 +177,85 @@ export function PublicTransparencyPage() {
             descricao="Nenhuma entrada ou saída foi registrada na competência selecionada. Escolha outro mês para ver o histórico."
           />
         ) : (
-          <TabelaRolavel titulo="Movimentações por categoria" cartoes>
-            <table>
-              <thead>
-                <tr>
-                  <th>Categoria</th>
-                  <th>Tipo</th>
-                  <th data-alinha="direita">Total</th>
-                  <th data-alinha="direita">Lançamentos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dados.byCategory.map((linha) => (
-                  <tr key={`${linha.type}-${linha.category}`}>
-                    <td data-coluna="texto" data-campo="nome">
-                      {linha.category}
-                    </td>
-                    <td data-coluna="texto" data-campo="tipo">
-                      {rotuloTipo(linha.type)}
-                    </td>
-                    <td data-alinha="direita" data-campo="valor">
-                      <span className={`valor valor--${linha.type.toLowerCase()}`}>
-                        {formatarMoeda(linha.total)}
-                      </span>
-                    </td>
-                    <td data-alinha="direita" data-campo="quantidade" data-rotulo="Lançamentos">
-                      {linha.count}
-                    </td>
+          <>
+            {/* Duas tabelas seguidas, uma de resumo e outra de detalhe: sem titulo visivel
+                o visitante nao percebe onde termina uma e comeca a outra. */}
+            <h2>Por categoria</h2>
+            <TabelaRolavel titulo="Movimentações por categoria" cartoes>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Tipo</th>
+                    <th data-alinha="direita">Total</th>
+                    <th data-alinha="direita">Lançamentos</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </TabelaRolavel>
+                </thead>
+                <tbody>
+                  {dados.byCategory.map((linha) => (
+                    <tr key={`${linha.type}-${linha.category}`}>
+                      <td data-coluna="texto" data-campo="nome">
+                        {linha.category}
+                      </td>
+                      <td data-coluna="texto" data-campo="tipo">
+                        {rotuloTipo(linha.type)}
+                      </td>
+                      <td data-alinha="direita" data-campo="valor">
+                        <span className={`valor valor--${linha.type.toLowerCase()}`}>
+                          {formatarMoeda(linha.total)}
+                        </span>
+                      </td>
+                      <td data-alinha="direita" data-campo="quantidade" data-rotulo="Lançamentos">
+                        {linha.count}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TabelaRolavel>
+
+            <h2>Lançamentos do mês</h2>
+            <TabelaRolavel titulo="Lançamentos do mês" cartoes>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th data-alinha="direita">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dados.statement.map((lancamento) => (
+                    <tr key={lancamento.id}>
+                      <td data-campo="data">{formatarData(lancamento.date)}</td>
+                      <td data-coluna="texto" data-campo="descricao">
+                        {lancamento.description}
+                      </td>
+                      <td data-coluna="texto" data-campo="categoria">
+                        {lancamento.category.name}
+                      </td>
+                      <td data-alinha="direita" data-campo="valor">
+                        <span
+                          className={`valor valor--${lancamento.type.toLowerCase()}`}
+                          aria-label={`${rotuloTipo(lancamento.type)} de ${formatarMoeda(lancamento.amount)}`}
+                        >
+                          {valorComSinal(lancamento.type, lancamento.amount)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TabelaRolavel>
+          </>
         )}
 
         {dados.privacy.personalFieldsHidden && (
           <p className="nota-rodape">
-            Nenhum dado pessoal de responsáveis é exibido nesta página, conforme a LGPD. Os valores
-            apresentados são agregados por categoria a partir dos lançamentos registrados no
-            período.
+            Nenhum dado pessoal de responsáveis é exibido nesta página, conforme a LGPD. Os
+            lançamentos aparecem só com data, descrição, categoria e valor, e os estornados não
+            entram nos totais nem no saldo.
           </p>
         )}
       </main>

@@ -176,6 +176,43 @@ export async function getPublicMonthlyAggregates(organizationId: bigint, start: 
   });
 }
 
+// Saldo de toda a historia da organizacao ate o fim do mes consultado, para um mes
+// antigo mostrar o saldo daquela epoca, e nao o de hoje.
+export async function getPublicBalanceUntil(organizationId: bigint, end: Date) {
+  return prisma.transaction.groupBy({
+    by: ['type'],
+    where: {
+      organizationId,
+      date: { lt: end },
+      reversedAt: null,
+      status: { not: 'ESTORNADO' },
+    },
+    _sum: { amount: true },
+  });
+}
+
+// So os campos que a pagina publica pode mostrar: responsavel, origem e destinatario
+// podem identificar pessoas e ficam fora (LGPD).
+export async function getPublicMonthStatement(organizationId: bigint, start: Date, end: Date) {
+  return prisma.transaction.findMany({
+    where: {
+      organizationId,
+      date: { gte: start, lt: end },
+      reversedAt: null,
+      status: { not: 'ESTORNADO' },
+    },
+    select: {
+      id: true,
+      date: true,
+      type: true,
+      amount: true,
+      description: true,
+      category: { select: { id: true, name: true } },
+    },
+    orderBy: [{ date: 'asc' }, { id: 'asc' }],
+  });
+}
+
 export async function getCategoriesByIds(categoryIds: bigint[], organizationId: bigint) {
   if (categoryIds.length === 0) return [];
 

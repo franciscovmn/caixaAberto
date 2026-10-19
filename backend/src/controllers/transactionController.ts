@@ -484,11 +484,11 @@ export async function publicTransparency(req: Request, res: Response) {
     const range = getMonthRange(typeof req.query.mes === 'string' ? req.query.mes : undefined);
     if (!range) return res.status(400).json({ erro: 'mes deve estar no formato YYYY-MM.' });
 
-    const groups = await transactionRepository.getPublicMonthlyAggregates(
-      organization.id,
-      range.start,
-      range.end,
-    );
+    const [groups, balanceGroups, statement] = await Promise.all([
+      transactionRepository.getPublicMonthlyAggregates(organization.id, range.start, range.end),
+      transactionRepository.getPublicBalanceUntil(organization.id, range.end),
+      transactionRepository.getPublicMonthStatement(organization.id, range.start, range.end),
+    ]);
 
     const categoryIds = [...new Set(groups.map((group) => group.categoryId.toString()))].map(
       BigInt,
@@ -512,6 +512,11 @@ export async function publicTransparency(req: Request, res: Response) {
       .filter((item) => item.type === 'SAIDA')
       .reduce((sum, item) => sum.plus(item.total), new Prisma.Decimal(0));
 
+    const accumulatedBalance = balanceGroups.reduce((sum, group) => {
+      const amount = new Prisma.Decimal(group._sum.amount ?? 0);
+      return group.type === 'ENTRADA' ? sum.plus(amount) : sum.minus(amount);
+    }, new Prisma.Decimal(0));
+
     return res.json({
       organization: {
         id: organization.id.toString(),
@@ -526,7 +531,16 @@ export async function publicTransparency(req: Request, res: Response) {
         exits: exits.toString(),
         balance: entries.minus(exits).toString(),
       },
+      accumulatedBalance: accumulatedBalance.toString(),
       byCategory: aggregates,
+      statement: statement.map((item) => ({
+        id: item.id.toString(),
+        date: item.date.toISOString().slice(0, 10),
+        type: item.type,
+        amount: item.amount.toString(),
+        description: item.description,
+        category: { id: item.category.id.toString(), name: item.category.name },
+      })),
       privacy: {
         personalFieldsHidden: true,
       },
