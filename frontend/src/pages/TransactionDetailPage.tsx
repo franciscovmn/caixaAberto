@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
-import { ReceiptDetailPreview } from '../components/ReceiptAttachment';
+import { ReceiptDetailPreview, ReceiptUploadField } from '../components/ReceiptAttachment';
 import { formatarData, formatarMoeda, rotuloStatus, valorComSinal } from '../lib/formato';
-import { ApiError, apiRequest } from '../lib/httpClient';
+import { ApiError, apiRequest, apiUploadRequest } from '../lib/httpClient';
 import { podeEscrever } from '../lib/session';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
@@ -36,6 +37,14 @@ interface EstornoResponse {
   dataEstorno: string;
 }
 
+interface ReceiptUploadResponse {
+  id: string;
+  nomeArquivo: string;
+  tipoArquivo: string;
+  tamanho: string;
+  url: string;
+}
+
 const RECIPIENT_LABEL = 'Destinatário';
 const SOURCE_LABEL = 'Origem';
 const NAO_INFORMADO = 'Não informado';
@@ -52,6 +61,10 @@ export function TransactionDetailPage() {
   const [estornando, setEstornando] = useState(false);
   const [erroEstorno, setErroEstorno] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
+
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [erroArquivo, setErroArquivo] = useState<string | null>(null);
+  const [anexando, setAnexando] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -106,6 +119,50 @@ export function TransactionDetailPage() {
     }
   }
 
+  // Quem cadastrou sem comprovante, ou viu o envio falhar depois de salvar, completa aqui:
+  // o formulario de registro manda para este detalhe quando o anexo nao vai.
+  async function handleAnexar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!lancamento || !arquivo) return;
+
+    setAnexando(true);
+    setErroArquivo(null);
+
+    const dados = new FormData();
+    dados.append('arquivo', arquivo);
+
+    try {
+      const comprovante = await apiUploadRequest<ReceiptUploadResponse>(
+        `/lancamentos/${lancamento.id}/comprovante`,
+        dados,
+      );
+
+      setLancamento((atual) =>
+        atual
+          ? {
+              ...atual,
+              receipt: {
+                id: comprovante.id,
+                fileName: comprovante.nomeArquivo,
+                fileType: comprovante.tipoArquivo,
+                size: comprovante.tamanho,
+                fileUrl: comprovante.url,
+                uploadedAt: new Date().toISOString(),
+              },
+            }
+          : atual,
+      );
+      setArquivo(null);
+      setMensagem('Comprovante anexado.');
+    } catch (error) {
+      setErroArquivo(
+        error instanceof ApiError ? error.message : 'Não foi possível anexar o comprovante',
+      );
+    } finally {
+      setAnexando(false);
+    }
+  }
+
   if (carregando) {
     return (
       <main>
@@ -126,6 +183,8 @@ export function TransactionDetailPage() {
   }
 
   const podeEstornar = podeEscrever() && lancamento.status === 'ATIVO';
+  // Mesma regra de corrigir e estornar: lancamento estornado nao recebe mais nada.
+  const podeAnexar = podeEstornar;
 
   return (
     <main>
@@ -239,6 +298,25 @@ export function TransactionDetailPage() {
           )}
         </dd>
       </dl>
+
+      {/* Fora da lista de dados, que usa a fonte dos valores: aqui o campo fica igual
+          ao do formulario de registro. */}
+      {podeAnexar && !lancamento.receipt && (
+        <form onSubmit={handleAnexar}>
+          <ReceiptUploadField
+            file={arquivo}
+            error={erroArquivo}
+            disabled={anexando}
+            onChange={(escolhido, erroEscolha) => {
+              setArquivo(escolhido);
+              setErroArquivo(erroEscolha);
+            }}
+          />
+          <button type="submit" disabled={!arquivo || anexando}>
+            {anexando ? 'Anexando...' : 'Anexar comprovante'}
+          </button>
+        </form>
+      )}
 
       <p>
         <Link to="/lancamentos">Voltar para a listagem</Link>
