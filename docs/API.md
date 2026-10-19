@@ -940,6 +940,13 @@ Erros:
 - `400`: período ou filtros inválidos;
 - `404`: token inexistente ou transparência desativada.
 
-Compatibilidade atual: responde em `GET /transparency/:publicLink`, usa nomes em inglês e entrega
-somente agregados mensais por categoria; o saldo atual e o extrato resumido ainda não fazem parte da
-resposta temporária.
+Compatibilidade atual: responde em `GET /transparency/:publicLink` e usa nomes em inglês. Além dos
+totais do mês (`totals`) e dos agregados por categoria (`byCategory`), devolve:
+
+- `accumulatedBalance`: saldo de todos os lançamentos ativos até o fim do mês consultado, para que um
+  mês antigo mostre o saldo daquela época;
+- `statement`: lançamentos ativos do mês, em ordem de data e id, só com `id`, `date`, `type`,
+  `amount`, `description` e `category` (`id`, `name`). Responsável, origem e destinatário ficam de
+  fora, porque podem identificar pessoas.
+
+Lançamentos estornados não entram em nenhum desses campos.
