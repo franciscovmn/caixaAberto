@@ -195,4 +195,88 @@ describe('TransactionDetailPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Lançamento já está estornado');
     expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument();
   });
+
+  describe('anexar comprovante depois do cadastro', () => {
+    const COMPROVANTE_ANEXADO = {
+      status: 201,
+      body: {
+        id: '3',
+        lancamentoId: '10',
+        nomeArquivo: 'nota-paineis.pdf',
+        tipoArquivo: 'application/pdf',
+        tamanho: '2048',
+        url: '/lancamentos/10/comprovante',
+      },
+    };
+
+    function escolherArquivo(usuario: ReturnType<typeof userEvent.setup>) {
+      const arquivo = new File(['conteudo'], 'nota-paineis.pdf', { type: 'application/pdf' });
+      return usuario.upload(screen.getByLabelText('Comprovante'), arquivo);
+    }
+
+    it('anexa o comprovante e passa a mostrar a pré-visualização', async () => {
+      autenticar();
+      const api = stubApi({
+        '/transactions/10': { body: DETALHE },
+        '/comprovante': COMPROVANTE_ANEXADO,
+      });
+      const usuario = userEvent.setup();
+
+      renderizar();
+
+      const anexar = await screen.findByRole('button', { name: 'Anexar comprovante' });
+      expect(anexar).toBeDisabled();
+
+      await escolherArquivo(usuario);
+      await usuario.click(anexar);
+
+      expect(await screen.findByText('Comprovante anexado.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Anexar comprovante' })).not.toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Ampliar' })).toBeInTheDocument();
+
+      const envio = api
+        .chamadasPara('/lancamentos/10/comprovante')
+        .find((c) => c.method === 'POST');
+      expect(envio?.body).toBeInstanceOf(FormData);
+      expect((envio?.body as FormData).get('arquivo')).toHaveProperty('name', 'nota-paineis.pdf');
+    });
+
+    it('mostra o erro da API e mantém o campo para tentar de novo', async () => {
+      autenticar();
+      stubApi({
+        '/transactions/10': { body: DETALHE },
+        '/comprovante': { status: 409, body: { erro: 'Lançamento já possui comprovante' } },
+      });
+      const usuario = userEvent.setup();
+
+      renderizar();
+
+      await screen.findByRole('button', { name: 'Anexar comprovante' });
+      await escolherArquivo(usuario);
+      await usuario.click(screen.getByRole('button', { name: 'Anexar comprovante' }));
+
+      expect(await screen.findByText('Lançamento já possui comprovante')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Anexar comprovante' })).toBeInTheDocument();
+    });
+
+    it('não oferece anexar para CONSULTOR', async () => {
+      autenticar('CONSULTOR');
+      stubApi({ '/transactions/10': { body: DETALHE } });
+
+      renderizar();
+
+      expect(await screen.findByText('Nenhum comprovante anexado')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Anexar comprovante' })).not.toBeInTheDocument();
+    });
+
+    it('não oferece anexar em lançamento estornado', async () => {
+      autenticar();
+      stubApi({ '/transactions/10': { body: { ...DETALHE, status: 'ESTORNADO' } } });
+
+      renderizar();
+
+      expect(await screen.findByText('Nenhum comprovante anexado')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Anexar comprovante' })).not.toBeInTheDocument();
+    });
+  });
 });
