@@ -205,6 +205,54 @@ describe('TransactionsListPage', () => {
     );
   });
 
+  it('filtra por responsável entre os membros da organização em uso', async () => {
+    autenticar();
+    const api = stubApi({
+      ...LISTAGEM,
+      '/organizacoes/atual/contexto': { body: { organizacaoId: '7', papel: 'TESOUREIRO' } },
+      '/organizacoes/7/membros': {
+        body: {
+          dados: [
+            { usuario: { id: '42', nome: 'Rafaela Lima' } },
+            { usuario: { id: '41', nome: 'Ana Souza' } },
+          ],
+        },
+      },
+    });
+    const usuario = userEvent.setup();
+
+    renderizar();
+
+    const campo = await screen.findByLabelText('Responsável');
+    await screen.findByRole('option', { name: 'Rafaela Lima' });
+
+    // Em ordem alfabetica, e nao na ordem em que entraram na organizacao.
+    expect(
+      within(campo)
+        .getAllByRole('option')
+        .map((opcao) => opcao.textContent),
+    ).toEqual(['Todos', 'Ana Souza', 'Rafaela Lima']);
+
+    await usuario.selectOptions(campo, '42');
+
+    const periodo = `${formatarData(primeiroDiaDoMesAtual())} a ${formatarData(hojeISO())}`;
+    expect(screen.getByText(`${periodo} · Rafaela Lima`)).toBeInTheDocument();
+    expect(api.chamadasPara('/lancamentos').at(-1)?.url).toContain('usuarioId=42');
+  });
+
+  it('mantém a listagem quando os responsáveis não carregam', async () => {
+    autenticar('CONSULTOR');
+    stubApi({
+      ...LISTAGEM,
+      '/organizacoes/atual/contexto': { status: 500, body: { erro: 'Erro interno' } },
+    });
+
+    renderizar();
+
+    expect(await screen.findByRole('region', { name: 'Lançamentos' })).toBeInTheDocument();
+    expect(within(screen.getByLabelText('Responsável')).getAllByRole('option')).toHaveLength(1);
+  });
+
   it('mostra o erro da API quando a listagem não carrega', async () => {
     autenticar();
     stubApi({

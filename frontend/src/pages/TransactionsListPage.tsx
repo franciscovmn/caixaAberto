@@ -46,11 +46,25 @@ interface CategoryListResponse {
   dados: CategoryOption[];
 }
 
+interface ResponsavelOption {
+  id: string;
+  nome: string;
+}
+
+interface ContextoResponse {
+  organizacaoId: string;
+}
+
+interface MemberListResponse {
+  dados: { usuario: ResponsavelOption }[];
+}
+
 interface Filtros {
   dataInicio: string;
   dataFim: string;
   tipo: '' | TransactionType;
   categoriaId: string;
+  usuarioId: string;
 }
 
 // Sem periodo nenhum: e o que o botao de limpar devolve, para a trilha completa
@@ -60,6 +74,7 @@ const SEM_FILTROS: Filtros = {
   dataFim: '',
   tipo: '',
   categoriaId: '',
+  usuarioId: '',
 };
 
 // A tela abre no mes corrente, como o Extrato e o Relatorio, em vez de despejar o
@@ -76,7 +91,8 @@ function ehPeriodoPadrao(filtros: Filtros): boolean {
     filtros.dataInicio === padrao.dataInicio &&
     filtros.dataFim === padrao.dataFim &&
     !filtros.tipo &&
-    !filtros.categoriaId
+    !filtros.categoriaId &&
+    !filtros.usuarioId
   );
 }
 
@@ -89,13 +105,18 @@ function montarQueryString(filtros: Filtros, pagina: number): string {
   if (filtros.dataFim) params.set('dataFim', filtros.dataFim);
   if (filtros.tipo) params.set('tipo', filtros.tipo);
   if (filtros.categoriaId) params.set('categoriaId', filtros.categoriaId);
+  if (filtros.usuarioId) params.set('usuarioId', filtros.usuarioId);
   params.set('pagina', String(pagina));
 
   return params.toString();
 }
 
 // No celular os filtros ficam recolhidos e esta frase diz o recorte em uso.
-function resumirFiltros(filtros: Filtros, categorias: CategoryOption[]): string {
+function resumirFiltros(
+  filtros: Filtros,
+  categorias: CategoryOption[],
+  responsaveis: ResponsavelOption[],
+): string {
   const { dataInicio, dataFim } = filtros;
   const periodo =
     dataInicio && dataFim
@@ -107,12 +128,19 @@ function resumirFiltros(filtros: Filtros, categorias: CategoryOption[]): string 
           : 'Todo o período';
   const tipo = filtros.tipo === 'ENTRADA' ? 'entradas' : filtros.tipo === 'SAIDA' ? 'saídas' : '';
   const categoria = categorias.find((item) => item.id === filtros.categoriaId)?.nome ?? '';
+  const responsavel = responsaveis.find((item) => item.id === filtros.usuarioId)?.nome ?? '';
 
-  return [periodo, tipo, categoria].filter(Boolean).join(' · ');
+  return [periodo, tipo, categoria, responsavel].filter(Boolean).join(' · ');
 }
 
 function temFiltroAplicado(filtros: Filtros): boolean {
-  return Boolean(filtros.dataInicio || filtros.dataFim || filtros.tipo || filtros.categoriaId);
+  return Boolean(
+    filtros.dataInicio ||
+    filtros.dataFim ||
+    filtros.tipo ||
+    filtros.categoriaId ||
+    filtros.usuarioId,
+  );
 }
 
 export function TransactionsListPage() {
@@ -124,6 +152,7 @@ export function TransactionsListPage() {
   const [pagina, setPagina] = useState(1);
   const [resultado, setResultado] = useState<TransactionListResponse | null>(null);
   const [categorias, setCategorias] = useState<CategoryOption[]>([]);
+  const [responsaveis, setResponsaveis] = useState<ResponsavelOption[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
@@ -137,6 +166,29 @@ export function TransactionsListPage() {
       })
       .catch(() => {
         // Filtro de categoria fica sem opções se a busca falhar; não bloqueia a listagem.
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  // Os responsaveis sao os membros ativos da organizacao em uso, que o contexto
+  // informa a partir do cabecalho de organizacao ja enviado em toda requisicao.
+  useEffect(() => {
+    let cancelado = false;
+
+    apiRequest<ContextoResponse>('/organizacoes/atual/contexto')
+      .then(({ organizacaoId }) =>
+        apiRequest<MemberListResponse>(`/organizacoes/${organizacaoId}/membros`),
+      )
+      .then((resposta) => {
+        if (cancelado) return;
+        const membros = resposta.dados.map((membro) => membro.usuario);
+        setResponsaveis(membros.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
+      })
+      .catch(() => {
+        // Como no filtro de categoria: sem opções, mas a listagem continua.
       });
 
     return () => {
@@ -217,7 +269,7 @@ export function TransactionsListPage() {
           <legend>Filtrar</legend>
 
           <div className="filtros__resumo">
-            <span>{resumirFiltros(filtros, categorias)}</span>
+            <span>{resumirFiltros(filtros, categorias, responsaveis)}</span>
             <button
               type="button"
               data-variante="secundario"
@@ -275,6 +327,23 @@ export function TransactionsListPage() {
                 {categorias.map((categoria) => (
                   <option key={categoria.id} value={categoria.id}>
                     {categoria.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Responsável
+              <select
+                value={filtros.usuarioId}
+                onChange={(event) =>
+                  setFiltros((atual) => ({ ...atual, usuarioId: event.target.value }))
+                }
+              >
+                <option value="">Todos</option>
+                {responsaveis.map((responsavel) => (
+                  <option key={responsavel.id} value={responsavel.id}>
+                    {responsavel.nome}
                   </option>
                 ))}
               </select>
