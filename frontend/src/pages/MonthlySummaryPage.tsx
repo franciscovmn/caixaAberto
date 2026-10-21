@@ -79,6 +79,11 @@ export function MonthlySummaryPage() {
     };
   }, [mesSelecionado]);
 
+  // Os apoios dos numeros falam do mes anterior; sem esta linha, um mes zerado nao dizia
+  // que o proprio mes consultado ficou sem movimentacao (CT-S1-19).
+  const semMovimento =
+    resumo !== null && Number(resumo.entries) === 0 && Number(resumo.exits) === 0;
+
   return (
     <main data-largura="ampla">
       <div className="cabecalho-pagina">
@@ -104,6 +109,10 @@ export function MonthlySummaryPage() {
 
       {carregando && <p role="status">Carregando resumo do mês...</p>}
       {erro && <p role="alert">{erro}</p>}
+
+      {resumo && !carregando && semMovimento && (
+        <p role="status">Não houve movimentação em {formatarCompetencia(resumo.month)}.</p>
+      )}
 
       {resumo && !carregando && (
         <section className="numeros" aria-label={`Resumo de ${formatarCompetencia(resumo.month)}`}>
