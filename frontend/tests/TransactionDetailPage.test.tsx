@@ -57,6 +57,39 @@ describe('TransactionDetailPage', () => {
     expect(screen.queryByText('ATIVO')).not.toBeInTheDocument();
   });
 
+  // CA-F19-01 a CA-F19-04: o detalhe reune os dados, o responsavel e o comprovante.
+  it('mostra categoria, responsável, destinatário e o comprovante do lançamento', async () => {
+    autenticar();
+    stubApi({
+      '/transactions/10': {
+        body: {
+          ...DETALHE,
+          receipt: {
+            id: '3',
+            fileName: 'nota-paineis.pdf',
+            fileType: 'application/pdf',
+            size: '2048',
+            fileUrl: '/lancamentos/10/comprovante',
+            uploadedAt: '2026-09-14T15:00:00.000Z',
+          },
+        },
+      },
+      '/lancamentos/10/comprovante': { body: {} },
+    });
+
+    renderizar();
+
+    expect(await screen.findByText('Categoria')).toBeInTheDocument();
+    expect(screen.getByText('Categoria').nextElementSibling).toHaveTextContent('Decoração');
+    expect(screen.getByText('Responsável').nextElementSibling).toHaveTextContent('Ana Tesoureira');
+    expect(screen.getByText('Destinatário').nextElementSibling).toHaveTextContent(
+      'Decorações Silva',
+    );
+    expect(await screen.findByRole('button', { name: 'Ampliar' })).toBeInTheDocument();
+    expect(screen.getAllByText(/nota-paineis\.pdf/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Anexar comprovante' })).not.toBeInTheDocument();
+  });
+
   it('usa o rótulo de destinatário para saída', async () => {
     autenticar();
     stubApi({ '/transactions/10': { body: DETALHE } });

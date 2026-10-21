@@ -167,4 +167,23 @@ describe('registro de saída financeira (US19)', () => {
     expect(resumoDepois.body.exits).toBe('120');
     expect(resumoDepois.body.balance).toBe('-120');
   });
+
+  it('Cenário 6 - dia inexistente no mês não é aceito', async () => {
+    const { organization, authorization } = await criarOrganizacaoComTesoureiro();
+    const categoria = await createCategory({ organizationId: organization.id, type: 'SAIDA' });
+
+    const response = await request(createApp())
+      .post('/transactions')
+      .set('Authorization', authorization)
+      .send({
+        tipo: 'SAIDA',
+        categoryId: categoria.id.toString(),
+        amount: '80.00',
+        date: '2026-02-30',
+        description: 'Faixas do evento',
+        recipient: 'Gráfica Central',
+      });
+
+    expect(response.status).toBe(400);
+  });
 });

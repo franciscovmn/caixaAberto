@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import { TransactionsListPage } from '../src/pages/TransactionsListPage';
@@ -88,6 +88,30 @@ describe('TransactionsListPage', () => {
     expect(
       await screen.findByRole('link', { name: 'Ver detalhes de Mensalidades do mês corrente' }),
     ).toHaveAttribute('href', '/lancamentos/11');
+  });
+
+  // CA-F18-04: cada resultado leva ao detalhamento do lançamento.
+  it('abre o detalhe ao escolher um lançamento na lista', async () => {
+    autenticar();
+    stubApi(LISTAGEM);
+    const usuario = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/lancamentos']}>
+        <Routes>
+          <Route path="/lancamentos" element={<TransactionsListPage />} />
+          <Route path="/lancamentos/:id" element={<h1>Detalhe do lançamento</h1>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await usuario.click(
+      await screen.findByRole('link', { name: 'Ver detalhes de Mensalidades do mês corrente' }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Detalhe do lançamento' }),
+    ).toBeInTheDocument();
   });
 
   it('marca a linha estornada', async () => {
