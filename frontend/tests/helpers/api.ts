@@ -4,6 +4,7 @@ export interface ChamadaRegistrada {
   url: string;
   method: string;
   body: unknown;
+  headers: Record<string, string>;
 }
 
 interface RespostaConfigurada {
@@ -28,6 +29,7 @@ export function stubApi(rotas: Rotas) {
       url,
       method,
       body: typeof corpo === 'string' ? JSON.parse(corpo) : corpo,
+      headers: (init?.headers ?? {}) as Record<string, string>,
     });
 
     const chave = Object.keys(rotas).find((rota) => url.includes(rota));
