@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { ReceiptDetailPreview, ReceiptUploadField } from '../components/ReceiptAttachment';
+import { dataISOLocal } from '../lib/data';
 import { formatarData, formatarMoeda, rotuloStatus, valorComSinal } from '../lib/formato';
 import { ApiError, apiRequest, apiUploadRequest } from '../lib/httpClient';
 import { podeEscrever } from '../lib/session';
@@ -19,6 +20,7 @@ interface TransactionDetail {
   source: string | null;
   recipient: string | null;
   status: 'ATIVO' | 'ESTORNADO';
+  reversedAt: string | null;
   category: { id: string; name: string; type: TransactionType };
   user: { id: string; name: string; email: string };
   receipt: {
@@ -48,6 +50,12 @@ interface ReceiptUploadResponse {
 const RECIPIENT_LABEL = 'Destinatário';
 const SOURCE_LABEL = 'Origem';
 const NAO_INFORMADO = 'Não informado';
+
+// reversedAt e um instante, nao uma data de calendario: vai para o fuso da aplicacao antes
+// de formatar, senao um estorno feito depois das 21h aparece com o dia seguinte.
+function formatarDataEstorno(instante: string): string {
+  return formatarData(dataISOLocal(new Date(instante)));
+}
 
 export function TransactionDetailPage() {
   useTituloPagina('Detalhe do lançamento');
@@ -107,7 +115,9 @@ export function TransactionDetailPage() {
         method: 'POST',
       });
 
-      setLancamento((atual) => (atual ? { ...atual, status: estorno.status } : atual));
+      setLancamento((atual) =>
+        atual ? { ...atual, status: estorno.status, reversedAt: estorno.dataEstorno } : atual,
+      );
       setMensagem('Lançamento estornado.');
       setConfirmandoEstorno(false);
     } catch (error) {
@@ -246,7 +256,9 @@ export function TransactionDetailPage() {
 
       {lancamento.status === 'ESTORNADO' && (
         <p role="alert">
-          Este lançamento foi estornado e não entra mais no cálculo do saldo do período.
+          {lancamento.reversedAt
+            ? `Este lançamento foi estornado em ${formatarDataEstorno(lancamento.reversedAt)} e não entra mais no cálculo do saldo do período.`
+            : 'Este lançamento foi estornado e não entra mais no cálculo do saldo do período.'}
         </p>
       )}
 
@@ -288,6 +300,13 @@ export function TransactionDetailPage() {
 
         <dt>Status</dt>
         <dd>{rotuloStatus(lancamento.status)}</dd>
+
+        {lancamento.reversedAt && (
+          <>
+            <dt>Data do estorno</dt>
+            <dd>{formatarDataEstorno(lancamento.reversedAt)}</dd>
+          </>
+        )}
 
         <dt>Comprovante</dt>
         <dd>
