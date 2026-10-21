@@ -72,6 +72,32 @@ describe('MonthlySummaryPage', () => {
 
     expect(totais).toHaveTextContent(/Nada registrado em agosto/);
     expect(totais).toHaveTextContent(/Sem movimento em agosto/);
+    expect(screen.queryByText(/Não houve movimentação/)).not.toBeInTheDocument();
+  });
+
+  // US29, Cenário 2: o mês consultado sem lançamentos mostra zeros e diz que não houve movimento.
+  it('informa quando o mês consultado não teve movimentação', async () => {
+    autenticar();
+    stubApi({
+      '/transactions/resumo/mensal': {
+        body: {
+          month: '2026-07',
+          entries: '0',
+          exits: '0',
+          balance: '0',
+          previousMonth: { month: '2026-06', entries: '0', exits: '0', balance: '0' },
+        },
+      },
+    });
+
+    render(<MonthlySummaryPage />);
+
+    expect(await screen.findByText('Não houve movimentação em julho de 2026.')).toHaveAttribute(
+      'role',
+      'status',
+    );
+    const totais = screen.getByRole('region', { name: /Resumo de/ });
+    expect(totais).toHaveTextContent(/R\$\s*0,00/);
   });
 
   it('mostra o erro da API quando o resumo não carrega', async () => {
