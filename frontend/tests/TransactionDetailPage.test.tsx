@@ -92,6 +92,46 @@ describe('TransactionDetailPage', () => {
     expect(screen.getAllByText('Estornado')).toHaveLength(2);
   });
 
+  // CA-F19-05: o estornado mostra o status e a data do estorno em destaque.
+  it('mostra a data do estorno no aviso e nos dados do lançamento (CA-F19-05)', async () => {
+    autenticar();
+    stubApi({
+      '/transactions/10': {
+        body: { ...DETALHE, status: 'ESTORNADO', reversedAt: '2026-10-16T18:00:00.000Z' },
+      },
+    });
+
+    renderizar();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Este lançamento foi estornado em 16/10/2026',
+    );
+    expect(screen.getByText('Data do estorno').nextElementSibling).toHaveTextContent('16/10/2026');
+  });
+
+  it('usa o dia de Fortaleza para o estorno feito depois das 21h', async () => {
+    autenticar();
+    stubApi({
+      '/transactions/10': {
+        body: { ...DETALHE, status: 'ESTORNADO', reversedAt: '2026-10-17T01:30:00.000Z' },
+      },
+    });
+
+    renderizar();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('estornado em 16/10/2026');
+  });
+
+  it('não mostra a data do estorno em lançamento ativo', async () => {
+    autenticar();
+    stubApi({ '/transactions/10': { body: { ...DETALHE, reversedAt: null } } });
+
+    renderizar();
+
+    expect(await screen.findByText('Aluguel de painéis')).toBeInTheDocument();
+    expect(screen.queryByText('Data do estorno')).not.toBeInTheDocument();
+  });
+
   it('mostra o erro da API e oferece a volta para a listagem', async () => {
     autenticar();
     stubApi({ '/transactions/10': { status: 404, body: { erro: 'Lançamento não encontrado.' } } });
@@ -169,6 +209,7 @@ describe('TransactionDetailPage', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Lançamento estornado.');
     expect(screen.getAllByText('Estornado').length).toBeGreaterThan(0);
+    expect(screen.getByRole('alert')).toHaveTextContent('estornado em 16/10/2026');
     expect(screen.queryByRole('button', { name: 'Estornar lançamento' })).not.toBeInTheDocument();
     expect(api.chamadasPara('/lancamentos/10/estorno')[0]!.method).toBe('POST');
   });
