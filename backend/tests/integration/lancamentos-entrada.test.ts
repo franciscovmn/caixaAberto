@@ -226,4 +226,62 @@ describe('registro de entrada financeira (US18)', () => {
     expect(response.status).toBe(400);
     expect(response.body).not.toMatchObject({ erro: 'Erro interno ao registrar lançamento.' });
   });
+
+  it('Cenário 9 - categoria ou data ausente retorna 400 e não grava nada', async () => {
+    const { organization, authorization } = await criarOrganizacaoComTesoureiro();
+    const categoria = await createCategory({ organizationId: organization.id, type: 'ENTRADA' });
+    const base = {
+      tipo: 'ENTRADA',
+      categoryId: categoria.id.toString(),
+      amount: '150.00',
+      date: '2026-09-03',
+      description: 'Mensalidade setembro',
+    };
+
+    const semCategoria = { ...base, categoryId: undefined };
+    const semData = { ...base, date: undefined };
+
+    for (const corpo of [semCategoria, semData]) {
+      const response = await request(createApp())
+        .post('/transactions')
+        .set('Authorization', authorization)
+        .send(corpo);
+
+      expect(response.status).toBe(400);
+      expect(response.body.erro).toBe(
+        'categoryId, amount, date e description são obrigatórios e válidos.',
+      );
+    }
+
+    const listagem = await request(createApp())
+      .get('/lancamentos?dataInicio=2026-09-01&dataFim=2026-09-30')
+      .set('Authorization', authorization);
+    expect(listagem.status).toBe(200);
+    expect(listagem.body.dados).toHaveLength(0);
+  });
+
+  it('Cenário 10 - a entrada fica vinculada ao tesoureiro que registrou (CA-F13-03)', async () => {
+    const { user, organization, authorization } = await criarOrganizacaoComTesoureiro();
+    const categoria = await createCategory({ organizationId: organization.id, type: 'ENTRADA' });
+
+    const response = await request(createApp())
+      .post('/transactions')
+      .set('Authorization', authorization)
+      .send({
+        tipo: 'ENTRADA',
+        categoryId: categoria.id.toString(),
+        amount: '150.00',
+        date: '2026-09-03',
+        description: 'Mensalidade setembro',
+        source: 'João',
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({
+      userId: user.id.toString(),
+      organizationId: organization.id.toString(),
+      amount: '150',
+      status: 'ATIVO',
+    });
+  });
 });
