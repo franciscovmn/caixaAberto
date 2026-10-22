@@ -105,6 +105,9 @@ As organizações e o papel em cada uma não vêm no login: o front consulta
 [`GET /users/me/organizacoes`](#get-usersmeorganizacoes) logo depois, e é dali que sai a organização
 escolhida e enviada em `X-Organization-Id`.
 
+O e-mail é comparado sem diferenciar maiúsculas e sem os espaços das pontas. Se duas contas
+antigas diferirem só nas maiúsculas, vale a que tem o e-mail exatamente como digitado.
+
 Erros:
 
 - `400`: e-mail ou senha ausentes;
@@ -358,7 +361,8 @@ Exige autenticação e papel `TESOUREIRO`. Vincula um usuário já cadastrado, i
 e-mail. O vínculo nasce ativo, com papel `CONSULTOR` e a data de hoje no fuso da aplicação
 (`America/Fortaleza`). Quem já teve vínculo desativado volta pelo mesmo registro, reativado com
 papel `CONSULTOR` e a data de hoje. Conta inativa não é vinculada: com vínculo ativo em duas
-organizações, nenhum tesoureiro conseguiria reativá-la.
+organizações, nenhum tesoureiro conseguiria reativá-la. O e-mail é procurado sem diferenciar
+maiúsculas, com preferência pela conta de e-mail idêntico ao digitado.
 
 Request:
 

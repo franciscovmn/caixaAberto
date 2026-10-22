@@ -52,12 +52,21 @@ export async function hasActiveMembershipOutside(
   return membership !== null;
 }
 
+// O tesoureiro digita o e-mail de outra pessoa, e a caixa que ele usa nao precisa ser a do cadastro.
+// A busca exata vem antes porque contas antigas podem diferir so na caixa.
 export async function findUserByEmail(
   email: string,
 ): Promise<{ id: bigint; active: boolean } | null> {
-  return prisma.user.findUnique({
+  const exact = await prisma.user.findUnique({
     where: { email },
     select: { id: true, active: true },
+  });
+  if (exact) return exact;
+
+  return prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+    select: { id: true, active: true },
+    orderBy: { id: 'asc' },
   });
 }
 

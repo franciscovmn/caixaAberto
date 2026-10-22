@@ -53,7 +53,7 @@ async function login(req: Request, res: Response) {
       });
     }
 
-    const user = await userRepository.findByEmail(email);
+    const user = await userRepository.findByEmailPreferringExact(email.trim());
 
     // A senha vem antes da situacao da conta para a resposta nao revelar que o e-mail existe
     // (CA-F01-03).

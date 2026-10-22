@@ -44,6 +44,29 @@ describe('autenticação da sessão', () => {
     expect(response.body.erro).toBe('E-mail ou senha inválidos');
   });
 
+  it('aceita o e-mail digitado com outras maiúsculas e espaços nas pontas', async () => {
+    const usuario = await criarUsuarioComSenha(SENHA_VALIDA, { email: 'maria@grupo.org' });
+
+    const response = await request(createApp())
+      .post('/auth/login')
+      .send({ email: ' Maria@Grupo.ORG ', senha: SENHA_VALIDA });
+
+    expect(response.status).toBe(200);
+    expect(response.body.user.id).toBe(usuario.id.toString());
+  });
+
+  it('prefere a conta com o e-mail exato quando duas diferem só nas maiúsculas', async () => {
+    await criarUsuarioComSenha('OutraSenha@123', { email: 'maria@grupo.org' });
+    const exata = await criarUsuarioComSenha(SENHA_VALIDA, { email: 'Maria@grupo.org' });
+
+    const response = await request(createApp())
+      .post('/auth/login')
+      .send({ email: 'Maria@grupo.org', senha: SENHA_VALIDA });
+
+    expect(response.status).toBe(200);
+    expect(response.body.user.id).toBe(exata.id.toString());
+  });
+
   it('Cenário 3 - login com email inexistente retorna 401', async () => {
     const response = await request(createApp())
       .post('/auth/login')
