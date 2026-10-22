@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
-import { useOrganizationContext } from '../contexts/OrganizationContext';
+import { useOrganizationContext } from '../contexts/useOrganizacao';
 import { podeEscrever } from '../lib/session';
 
 // Dados e link publico sao escrita do tesoureiro: o consultor so ve as abas que pode abrir.

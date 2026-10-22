@@ -1,21 +1,10 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { ApiError, apiRequest } from '../lib/httpClient';
 import type { OrganizacaoDoUsuario, OrganizacoesDoUsuarioResponse } from '../lib/organizacoes';
 import { getOrganizationId, setOrganizationId, setPapel } from '../lib/session';
-
-interface OrganizationContextValue {
-  organizacoes: OrganizacaoDoUsuario[];
-  organizacaoSelecionada: OrganizacaoDoUsuario | null;
-  organizacaoId: string | null;
-  carregando: boolean;
-  erro: string | null;
-  selecionarOrganizacao: (organizacaoId: string) => void;
-  atualizarOrganizacoes: (organizacaoPreferidaId?: string) => Promise<void>;
-}
-
-const OrganizationContext = createContext<OrganizationContextValue | null>(null);
+import { OrganizationContext } from './useOrganizacao';
 
 function aplicarSelecao(
   organizacoes: OrganizacaoDoUsuario[],
@@ -130,14 +119,4 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   );
 
   return <OrganizationContext.Provider value={value}>{children}</OrganizationContext.Provider>;
-}
-
-export function useOrganizationContext(): OrganizationContextValue {
-  const context = useContext(OrganizationContext);
-
-  if (!context) {
-    throw new Error('useOrganizationContext deve ser usado dentro de OrganizationProvider');
-  }
-
-  return context;
 }
