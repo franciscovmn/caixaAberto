@@ -170,6 +170,15 @@ export function ReceiptUploadField({
     onChange(selectedFile, null);
   }
 
+  // Quem escolheu o arquivo errado desfaz a escolha antes de salvar, sem precisar trocar por
+  // outro. O foco volta ao campo, que e de onde sai a proxima escolha.
+  function remover() {
+    if (inputRef.current) inputRef.current.value = '';
+    trocarPrevia(null);
+    onChange(null, null);
+    inputRef.current?.focus();
+  }
+
   // O controle nativo de arquivo e desenhado por cada navegador, com botao, texto e
   // altura proprios. O input continua sendo o campo, so que fora da vista, e quem
   // aparece e um botao do proprio sistema visual, igual em qualquer navegador.
@@ -198,6 +207,18 @@ export function ReceiptUploadField({
         <span className="campo-arquivo__nome" data-vazio={!file || undefined}>
           {file ? `${file.name} (${formatarTamanho(file.size)})` : 'Nenhum arquivo escolhido'}
         </span>
+        {file && (
+          <button
+            type="button"
+            className="campo-arquivo__remover"
+            data-variante="quieto"
+            onClick={remover}
+            disabled={disabled}
+            aria-label={`Remover ${file.name}`}
+          >
+            Remover
+          </button>
+        )}
       </div>
 
       <small>Imagem ou PDF de até 5 MB.</small>

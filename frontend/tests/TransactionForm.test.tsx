@@ -145,6 +145,23 @@ describe('TransactionForm', () => {
     expect(api.chamadasPara('/transactions')).toHaveLength(1);
   });
 
+  it('não envia o comprovante que foi removido antes de salvar', async () => {
+    const api = stubApi({ ...CATEGORIAS, ...LANCAMENTO_CRIADO, '/comprovante': { body: {} } });
+    const usuario = userEvent.setup();
+    renderizar();
+
+    await preencher(usuario, { descricao: 'Entrada sem comprovante' });
+
+    const arquivo = new File(['conteudo'], 'errado.pdf', { type: 'application/pdf' });
+    await usuario.upload(screen.getByLabelText(/Comprovante/), arquivo);
+    await usuario.click(screen.getByRole('button', { name: 'Remover errado.pdf' }));
+
+    await salvar(usuario);
+
+    await waitFor(() => expect(api.chamadasPara('/transactions')).toHaveLength(1));
+    expect(api.chamadasPara('/comprovante')).toHaveLength(0);
+  });
+
   it('envia o lançamento completo no caminho feliz', async () => {
     const api = stubApi({ ...CATEGORIAS, ...LANCAMENTO_CRIADO });
     const usuario = userEvent.setup();

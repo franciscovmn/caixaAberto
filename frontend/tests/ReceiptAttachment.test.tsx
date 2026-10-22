@@ -95,6 +95,26 @@ describe('ReceiptUploadField', () => {
     expect(aoMudar).toHaveBeenLastCalledWith(null);
   });
 
+  it('desfaz a escolha do arquivo antes de salvar', async () => {
+    const usuario = userEvent.setup();
+    const aoMudar = vi.fn();
+    render(<CampoControlado aoMudar={aoMudar} />);
+
+    const campo = screen.getByLabelText(/Comprovante/);
+    await usuario.upload(campo, arquivoDe('errado.png', 'image/png', 1024));
+
+    expect(screen.getByRole('img', { name: /Pré-visualização de errado\.png/ })).toBeVisible();
+
+    await usuario.click(screen.getByRole('button', { name: 'Remover errado.png' }));
+
+    expect(aoMudar).toHaveBeenLastCalledWith(null);
+    expect(screen.getByText('Nenhum arquivo escolhido')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Pré-visualização/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Remover/ })).not.toBeInTheDocument();
+    expect(campo).toHaveValue('');
+    expect(campo).toHaveFocus();
+  });
+
   it('aceita exatamente 5 MB, o limite documentado', async () => {
     const usuario = userEvent.setup();
     const aoMudar = vi.fn();
