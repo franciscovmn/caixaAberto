@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { ApiError, apiRequest } from '../lib/httpClient';
 import type { OrganizacaoResponse } from '../lib/organizacoes';
-import { useOrganizationContext } from '../contexts/OrganizationContext';
+import { useOrganizationContext } from '../contexts/useOrganizacao';
 import { useTituloPagina } from '../lib/useTituloPagina';
 
 type OrganizationFormMode = 'criar' | 'editar';

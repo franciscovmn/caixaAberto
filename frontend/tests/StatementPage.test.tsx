@@ -1,8 +1,9 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { OrganizationProvider } from '../src/contexts/OrganizationContext';
 import { mesAtual } from '../src/lib/data';
 import { StatementPage } from '../src/pages/StatementPage';
 import { autenticar, stubApi } from './helpers/api';
@@ -344,6 +345,49 @@ describe('StatementPage', () => {
       `dataInicio=${inicio}&dataFim=${fim}`,
     );
     expect(api.chamadasPara('/transactions/resumo/mensal')).toHaveLength(comparacoes);
+  });
+
+  it('imprime a visão aberta, que o navegador também salva em PDF', async () => {
+    stubPadrao();
+    const imprimir = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    const usuario = userEvent.setup();
+    renderizar();
+
+    await totais();
+    await usuario.click(screen.getByRole('button', { name: 'Imprimir ou salvar PDF' }));
+
+    expect(imprimir).toHaveBeenCalledTimes(1);
+    imprimir.mockRestore();
+  });
+
+  it('põe a organização e a data de emissão na cópia impressa', async () => {
+    stubPadrao({
+      '/users/me/organizacoes': {
+        body: {
+          dados: [
+            {
+              vinculoId: '1',
+              papel: 'TESOUREIRO',
+              dataVinculo: '2026-01-01',
+              organizacao: { id: '1', nome: 'Comissão de Formatura' },
+            },
+          ],
+        },
+      },
+    });
+    render(
+      <MemoryRouter initialEntries={['/extrato?mes=2026-09']}>
+        <OrganizationProvider>
+          <Routes>
+            <Route path="/extrato" element={<StatementPage />} />
+          </Routes>
+        </OrganizationProvider>
+      </MemoryRouter>,
+    );
+
+    const cabecalho = await screen.findByText('Comissão de Formatura');
+    expect(cabecalho.closest('p')).toHaveClass('somente-impressao');
+    expect(cabecalho.closest('p')).toHaveTextContent(/Emitido em \d{2}\/\d{2}\/\d{4}/);
   });
 
   // A checagem acontece antes de chamar a API: um periodo invertido nao vira requisicao.

@@ -9,7 +9,8 @@ import type { LinhaDoExtrato } from '../components/ExtratoDetalhado';
 import { EstadoVazio } from '../components/ui/EstadoVazio';
 import { SeletorData } from '../components/ui/SeletorData';
 import { SeletorMes } from '../components/ui/SeletorMes';
-import { dataEhValida, diasDoMes, mesAtual, mesEhValido, partesMes } from '../lib/data';
+import { useOrganizacaoAtual } from '../contexts/useOrganizacao';
+import { dataEhValida, diasDoMes, hojeISO, mesAtual, mesEhValido, partesMes } from '../lib/data';
 import {
   formatarCompetencia,
   formatarData,
@@ -109,6 +110,7 @@ function descreverPeriodo(periodo: Periodo): string {
 export function StatementPage() {
   useTituloPagina('Extrato');
 
+  const organizacao = useOrganizacaoAtual();
   const [params, setParams] = useSearchParams();
   const periodo = useMemo(() => lerPeriodo(params), [params]);
   const visao: Visao = params.get('visao') === 'detalhado' ? 'detalhado' : 'resumo';
@@ -209,12 +211,30 @@ export function StatementPage() {
     <main data-largura="ampla">
       <div className="cabecalho-pagina">
         <div>
+          {/* So no papel: de qual organizacao e de quando e a copia. */}
+          <p className="somente-impressao cabecalho-impressao">
+            {organizacao && <strong>{organizacao.organizacao.nome}</strong>}
+            {organizacao && ' · '}
+            Emitido em {formatarData(hojeISO())}
+          </p>
           <h1>Extrato</h1>
           <p className="cabecalho-pagina__apoio">
             {visao === 'resumo'
               ? `Quanto entrou, quanto saiu e para onde foi o dinheiro em ${descreverPeriodo(periodo)}.`
               : `Cada lançamento de ${descreverPeriodo(periodo)}, com o saldo depois dele.`}
           </p>
+        </div>
+
+        {/* O navegador imprime e salva em PDF a visao aberta, sem menu nem filtros. */}
+        <div className="acoes">
+          <button
+            type="button"
+            data-variante="secundario"
+            onClick={() => window.print()}
+            disabled={!dados || carregando}
+          >
+            Imprimir ou salvar PDF
+          </button>
         </div>
       </div>
 

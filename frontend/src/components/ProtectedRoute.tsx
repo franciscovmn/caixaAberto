@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import { OrganizationProvider, useOrganizationContext } from '../contexts/OrganizationContext';
+import { OrganizationProvider } from '../contexts/OrganizationContext';
+import { useOrganizationContext } from '../contexts/useOrganizacao';
 import { apiRequest } from '../lib/httpClient';
 import { clearSession, isAuthenticated } from '../lib/session';
 import { AppFooter, AppHeader } from './AppHeader';
