@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
+import { OrganizationArea } from './components/OrganizationArea';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RotaTesoureiro } from './components/RotaTesoureiro';
 import { CategoriesPage } from './pages/CategoriesPage';
@@ -36,17 +37,24 @@ export function App() {
           <Route path="/lancamentos/entrada" element={<NewInflowPage />} />
           <Route path="/lancamentos/saida" element={<NewOutflowPage />} />
           <Route path="/lancamentos/:id/editar" element={<EditTransactionPage />} />
-          <Route path="/organizacao/editar" element={<OrganizationFormPage modo="editar" />} />
-          <Route path="/organizacao/link-publico" element={<PublicLinkManagementPage />} />
-          <Route path="/organizacao/usuarios/novo" element={<UserRegistrationPage />} />
         </Route>
 
         <Route path="/lancamentos/:id" element={<TransactionDetailPage />} />
         <Route path="/resumo" element={<MonthlySummaryPage />} />
         <Route path="/extrato" element={<StatementPage />} />
         <Route path="/relatorios/categorias" element={<CategoryReportPage />} />
-        <Route path="/organizacao/membros" element={<MembersPage />} />
-        <Route path="/organizacao/categorias" element={<CategoriesPage />} />
+
+        <Route path="/organizacao" element={<OrganizationArea />}>
+          <Route index element={<Navigate to="membros" replace />} />
+          <Route path="membros" element={<MembersPage />} />
+          <Route path="categorias" element={<CategoriesPage />} />
+
+          <Route element={<RotaTesoureiro />}>
+            <Route path="membros/novo" element={<UserRegistrationPage />} />
+            <Route path="editar" element={<OrganizationFormPage modo="editar" />} />
+            <Route path="link-publico" element={<PublicLinkManagementPage />} />
+          </Route>
+        </Route>
       </Route>
 
       <Route path="/" element={<Navigate to="/lancamentos" replace />} />

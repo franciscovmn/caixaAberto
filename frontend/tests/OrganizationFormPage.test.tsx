@@ -72,6 +72,30 @@ describe('OrganizationFormPage', () => {
     });
   });
 
+  it('oferece voltar a quem já trabalha em outra organização (US07)', async () => {
+    autenticar();
+    stubApi({ '/users/me/organizacoes': VINCULOS });
+    renderizar('/organizacao/nova');
+
+    expect(
+      await screen.findByRole('link', { name: 'Voltar para a organização atual' }),
+    ).toHaveAttribute('href', '/organizacao');
+    expect(screen.getByText(/Você será tesoureiro da nova organização/)).toBeInTheDocument();
+  });
+
+  it('não oferece voltar a quem ainda não tem organização (US07)', async () => {
+    autenticar();
+    stubApi({ '/users/me/organizacoes': { body: { dados: [] } } });
+    renderizar('/organizacao/nova');
+
+    expect(
+      await screen.findByText('Cadastre a organização que será usada como contexto de trabalho.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Voltar para a organização atual' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('recusa fim da gestão antes do início sem chamar a API (US07)', async () => {
     autenticar();
     const api = stubApi({ '/users/me/organizacoes': { body: { dados: [] } } });

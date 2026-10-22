@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { ApiError, apiRequest } from '../lib/httpClient';
 import type { OrganizacaoResponse } from '../lib/organizacoes';
@@ -48,7 +48,9 @@ export function OrganizationFormPage({ modo }: OrganizationFormPageProps) {
   useTituloPagina(editar ? 'Editar organização' : 'Criar organização');
 
   const navigate = useNavigate();
-  const { organizacaoSelecionada, atualizarOrganizacoes } = useOrganizationContext();
+  const { organizacoes, organizacaoSelecionada, atualizarOrganizacoes } = useOrganizationContext();
+  // Quem ja trabalha em outra organizacao chega aqui pela area Organizacao e pode desistir.
+  const temOutra = !editar && organizacoes.length > 0;
   const [values, setValues] = useState<FormValues>(VALORES_VAZIOS);
   const [errosCampos, setErrosCampos] = useState<FieldErrors>({});
   const [erro, setErro] = useState<string | null>(null);
@@ -148,7 +150,9 @@ export function OrganizationFormPage({ modo }: OrganizationFormPageProps) {
           <p className="cabecalho-pagina__apoio">
             {editar
               ? 'Mantenha os dados institucionais e o período de gestão atualizados.'
-              : 'Cadastre a organização que será usada como contexto de trabalho.'}
+              : temOutra
+                ? 'Você será tesoureiro da nova organização e poderá alternar entre elas pelo seletor no topo.'
+                : 'Cadastre a organização que será usada como contexto de trabalho.'}
           </p>
         </div>
       </div>
@@ -211,6 +215,12 @@ export function OrganizationFormPage({ modo }: OrganizationFormPageProps) {
           {salvando ? 'Salvando...' : editar ? 'Salvar alterações' : 'Criar organização'}
         </button>
       </form>
+
+      {temOutra && (
+        <p>
+          <Link to="/organizacao">Voltar para a organização atual</Link>
+        </p>
+      )}
     </main>
   );
 }
