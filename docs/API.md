@@ -397,8 +397,10 @@ Request:
 { "papel": "TESOUREIRO" }
 ```
 
-Aceita `TESOUREIRO` ou `CONSULTOR`. A organização não pode ficar sem tesoureiro ativo: a tentativa
-de rebaixar o último responde `409`. A verificação e a alteração são feitas de forma transacional,
+Aceita `TESOUREIRO` ou `CONSULTOR`. Ninguém altera o próprio papel: o pedido sobre o vínculo de
+quem chama responde `403`, e a troca é sempre feita por outro tesoureiro. A organização não pode
+ficar sem tesoureiro ativo: dois tesoureiros que se rebaixam um ao outro ao mesmo tempo recebem
+`409` no segundo pedido. A verificação e a alteração são feitas de forma transacional,
 para impedir rebaixamentos simultâneos que deixem a organização sem tesoureiro.
 
 Sucesso `200`: devolve o vínculo atualizado.
@@ -407,7 +409,7 @@ Erros:
 
 - `400`: ID ou papel inválido, ou propriedade não reconhecida;
 - `401`: autenticação ausente ou inválida;
-- `403`: papel sem permissão ou vínculo inativo;
+- `403`: papel sem permissão, vínculo inativo ou vínculo de quem chama;
 - `404`: vínculo ausente, inativo ou pertencente a outra organização;
 - `409`: tentativa de rebaixar o último tesoureiro ativo ou conflito concorrente.
 

@@ -83,22 +83,41 @@ describe('alterar papel de membro (US10)', () => {
     });
   });
 
-  it('impede rebaixar o último tesoureiro ativo', async () => {
+  it('impede o tesoureiro de alterar o próprio papel, mesmo com outro tesoureiro ativo', async () => {
     const ctx = await setup();
-    const lastTreasurer = await alterar(ctx.actorMembership.id, ctx.authorization, {
+    const sozinho = await alterar(ctx.actorMembership.id, ctx.authorization, {
       papel: 'CONSULTOR',
     });
-    expect(lastTreasurer.status).toBe(409);
+    expect(sozinho.status).toBe(403);
+    expect(sozinho.body).toEqual({ erro: 'Você não pode alterar o seu próprio papel' });
 
     const addTreasurer = await alterar(ctx.membership.id, ctx.authorization, {
       papel: 'TESOUREIRO',
     });
     expect(addTreasurer.status).toBe(200);
-    const demote = await alterar(ctx.actorMembership.id, ctx.authorization, { papel: 'CONSULTOR' });
-    expect(demote.status).toBe(200);
+
+    const acompanhado = await alterar(ctx.actorMembership.id, ctx.authorization, {
+      papel: 'CONSULTOR',
+    });
+    expect(acompanhado.status).toBe(403);
+    expect(
+      await prisma.membership.findUniqueOrThrow({ where: { id: ctx.actorMembership.id } }),
+    ).toMatchObject({ role: 'TESOUREIRO', active: true });
   });
 
-  it('serializa rebaixamentos simultâneos e mantém ao menos um tesoureiro', async () => {
+  it('permite rebaixar outro tesoureiro', async () => {
+    const ctx = await setup();
+    await alterar(ctx.membership.id, ctx.authorization, { papel: 'TESOUREIRO' });
+
+    const demote = await alterar(ctx.membership.id, ctx.authorization, { papel: 'CONSULTOR' });
+
+    expect(demote.status).toBe(200);
+    expect(demote.body.papel).toBe('CONSULTOR');
+  });
+
+  // Com a troca do proprio papel recusada, o ultimo tesoureiro so ficaria sem papel se dois
+  // tesoureiros se rebaixassem um ao outro ao mesmo tempo.
+  it('serializa rebaixamentos cruzados e mantém ao menos um tesoureiro', async () => {
     const ctx = await setup();
     const secondTreasurer = await createUser();
     const secondMembership = await createMembership({
@@ -108,8 +127,10 @@ describe('alterar papel de membro (US10)', () => {
     });
 
     const [first, second] = await Promise.all([
-      alterar(ctx.actorMembership.id, ctx.authorization, { papel: 'CONSULTOR' }),
       alterar(secondMembership.id, ctx.authorization, { papel: 'CONSULTOR' }),
+      alterar(ctx.actorMembership.id, createAuthorizationHeader(secondTreasurer), {
+        papel: 'CONSULTOR',
+      }),
     ]);
     const statuses = [first.status, second.status].sort();
     expect(statuses[0]).toBe(200);

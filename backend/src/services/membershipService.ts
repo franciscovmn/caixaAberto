@@ -117,6 +117,7 @@ export async function changeMemberRole(
   organizationId: bigint,
   membershipId: bigint,
   role: Role,
+  requesterUserId: bigint,
 ): Promise<MemberResponse> {
   let updatedMember: MemberRecord | null;
   try {
@@ -124,8 +125,12 @@ export async function changeMemberRole(
       membershipId,
       organizationId,
       role,
+      requesterUserId,
     );
   } catch (error) {
+    if (error instanceof membershipRepository.OwnRoleChangeError) {
+      throw new AppError(403, error.message);
+    }
     if (error instanceof membershipRepository.LastActiveTreasurerError) {
       throw new AppError(409, error.message);
     }

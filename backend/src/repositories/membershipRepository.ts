@@ -107,6 +107,13 @@ export class LastActiveTreasurerError extends Error {
   }
 }
 
+export class OwnRoleChangeError extends Error {
+  constructor() {
+    super('Você não pode alterar o seu próprio papel');
+    this.name = 'OwnRoleChangeError';
+  }
+}
+
 /**
  * Altera o papel de um vínculo ativo dentro da organização indicada.
  *
@@ -117,15 +124,20 @@ export async function updateActiveMemberRole(
   id: bigint,
   organizationId: bigint,
   role: Role,
+  requesterUserId: bigint,
 ): Promise<MemberRecord | null> {
   return prisma.$transaction(
     async (transaction) => {
       const current = await transaction.membership.findFirst({
         where: { id, organizationId, active: true },
-        select: { role: true },
+        select: { role: true, userId: true },
       });
 
       if (!current) return null;
+
+      // O papel e dado por outro tesoureiro. Quem se rebaixava perdia na hora o acesso que
+      // acabara de usar, e a propria tela continuava oferecendo acoes que a API passava a recusar.
+      if (current.userId === requesterUserId) throw new OwnRoleChangeError();
 
       if (current.role === 'TESOUREIRO' && role === 'CONSULTOR') {
         const activeTreasurers = await transaction.membership.count({

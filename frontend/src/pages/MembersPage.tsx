@@ -25,6 +25,7 @@ interface MemberListResponse {
 
 // GET /organizacoes/{id}/membros exige o id real da organizacao no caminho. O seletor da US13
 // persiste o contexto escolhido; o fallback mantem esta pagina testavel fora do shell protegido.
+// A mesma lista traz o vinculo de quem consulta, que e a linha sem troca de papel.
 interface OrganizacaoDoUsuario {
   vinculoId: string;
   papel: Papel;
@@ -44,6 +45,7 @@ export function MembersPage() {
   const escrita = podeEscrever();
 
   const [organizacaoId, setOrganizacaoId] = useState<string | null>(null);
+  const [meuVinculoId, setMeuVinculoId] = useState<string | null>(null);
   const [membros, setMembros] = useState<Member[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -63,14 +65,13 @@ export function MembersPage() {
       setErro(null);
 
       try {
+        const organizacoes =
+          await apiRequest<OrganizacoesDoUsuarioResponse>('/users/me/organizacoes');
         const idPersistido = getOrganizationId();
-        let id = idPersistido;
-
-        if (!id) {
-          const organizacoes =
-            await apiRequest<OrganizacoesDoUsuarioResponse>('/users/me/organizacoes');
-          id = organizacoes.dados[0]?.organizacao.id ?? null;
-        }
+        const atual =
+          organizacoes.dados.find((item) => item.organizacao.id === idPersistido) ??
+          organizacoes.dados[0];
+        const id = atual?.organizacao.id ?? null;
 
         if (!id) {
           if (!cancelado) {
@@ -82,6 +83,7 @@ export function MembersPage() {
 
         if (cancelado) return;
         setOrganizacaoId(id);
+        setMeuVinculoId(atual?.vinculoId ?? null);
 
         const resposta = await apiRequest<MemberListResponse>(`/organizacoes/${id}/membros`);
         if (!cancelado) setMembros(resposta.dados);
@@ -218,39 +220,45 @@ export function MembersPage() {
               <TabelaEsqueleto colunas={4} />
             ) : (
               <tbody>
-                {membros.map((membro) => (
-                  <tr key={membro.id}>
-                    <td data-coluna="texto" data-campo="nome">
-                      {membro.usuario.nome}
-                    </td>
-                    <td data-coluna="texto" data-campo="email">
-                      {membro.usuario.email}
-                    </td>
-                    <td data-coluna="texto" data-campo="papel">
-                      {escrita ? (
-                        <select
-                          value={membro.papel}
-                          disabled={alterandoId === membro.id}
-                          onChange={(event) =>
-                            handleAlterarPapel(membro, event.target.value as Papel)
-                          }
-                          aria-label={`Papel de ${membro.usuario.nome}`}
-                        >
-                          {PAPEIS.map((papel) => (
-                            <option key={papel} value={papel}>
-                              {rotuloPapel(papel)}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="etiqueta">{rotuloPapel(membro.papel)}</span>
-                      )}
-                    </td>
-                    <td data-coluna="texto" data-campo="vinculo" data-rotulo="Vínculo desde">
-                      {formatarData(membro.dataVinculo)}
-                    </td>
-                  </tr>
-                ))}
+                {membros.map((membro) => {
+                  // O proprio papel e dado por outro tesoureiro; a API recusa a troca.
+                  const ehVoce = membro.id === meuVinculoId;
+
+                  return (
+                    <tr key={membro.id}>
+                      <td data-coluna="texto" data-campo="nome">
+                        {membro.usuario.nome}
+                        {ehVoce && <span className="membro__voce"> (você)</span>}
+                      </td>
+                      <td data-coluna="texto" data-campo="email">
+                        {membro.usuario.email}
+                      </td>
+                      <td data-coluna="texto" data-campo="papel">
+                        {escrita && !ehVoce ? (
+                          <select
+                            value={membro.papel}
+                            disabled={alterandoId === membro.id}
+                            onChange={(event) =>
+                              handleAlterarPapel(membro, event.target.value as Papel)
+                            }
+                            aria-label={`Papel de ${membro.usuario.nome}`}
+                          >
+                            {PAPEIS.map((papel) => (
+                              <option key={papel} value={papel}>
+                                {rotuloPapel(papel)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="etiqueta">{rotuloPapel(membro.papel)}</span>
+                        )}
+                      </td>
+                      <td data-coluna="texto" data-campo="vinculo" data-rotulo="Vínculo desde">
+                        {formatarData(membro.dataVinculo)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             )}
           </table>
