@@ -443,6 +443,11 @@ select,
   cursor: not-allowed;
 }
 
+/* Desfazer a escolha fica ao lado do nome, sem competir com o botao de escolher. */
+button.campo-arquivo__remover:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+
 /* Campo desligado: cada navegador escurece o seu de um jeito, entao a cor e o fundo
    ficam declarados aqui e a opacidade do desenho nativo e neutralizada. */
 input:disabled,
