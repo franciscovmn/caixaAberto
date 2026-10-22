@@ -188,3 +188,23 @@ isso de vez exige que a própria pessoa defina a senha, por um convite com link,
 envio de e-mail, que a proposta deixa fora do escopo (ver a decisão de 2026-10-15). Com o envio
 real, o cadastro pode passar a gerar um token de definição de senha pela mesma interface
 `PasswordResetNotifier`, sem senha escolhida por terceiros.
+
+## 2026-10-22: Extrato reúne resumo mensal e relatório por categoria
+
+Extrato (F22, US28), resumo mensal (F23, US29) e relatório por categoria (F24, US30) eram três
+telas sobre os mesmos lançamentos. Os números do topo do relatório já eram um resumo do período, e
+quem usava não via diferença entre resumo e extrato. As três viraram uma tela só, `/extrato`, com
+um período comum e duas visões: Resumo, com os totais e a composição por categoria, e Detalhado,
+lançamento a lançamento com o saldo acumulado. O período é um mês inteiro, que traz a comparação
+com o mês anterior do resumo mensal, ou um intervalo de datas livre. As três rotas da API
+continuam iguais e a tela consulta todas; `/resumo` e `/relatorios/categorias` redirecionam para o
+extrato.
+
+Na composição, a barra de cada categoria passou a medir a parte dela no total do próprio tipo. A
+escala anterior era a maior categoria de todas, então a maior saída aparecia sempre cheia, mesmo
+sendo só uma parte das saídas. Com mais de seis categorias num tipo, a tela mostra as cinco maiores
+e soma o resto numa linha "Outras", com um botão para ver todas.
+
+Membros, categorias, dados da organização e link público saíram do cabeçalho para uma área
+Organização com abas. Com três links no topo, a linha cabe no celular, e o menu recolhido de
+2026-10-18 deixou de ser necessário.

@@ -18,51 +18,34 @@ function renderizar() {
   );
 }
 
-// No celular a navegacao fica recolhida atras do botao Menu; o CSS esconde a lista pelo
-// data-aberto, que e o estado conferido aqui, ja que o jsdom nao aplica media query.
 describe('AppHeader', () => {
-  it('abre e fecha o menu pelo botão', async () => {
+  it('mostra as três telas e marca a atual', () => {
     autenticar();
-    const usuario = userEvent.setup();
     renderizar();
 
-    const botao = screen.getByRole('button', { name: 'Menu' });
     const navegacao = screen.getByRole('navigation', { name: 'Navegação principal' });
-    expect(botao).toHaveAttribute('aria-expanded', 'false');
-    expect(navegacao).toHaveAttribute('data-aberto', 'false');
-
-    await usuario.click(botao);
-
-    expect(screen.getByRole('button', { name: 'Fechar' })).toHaveAttribute('aria-expanded', 'true');
-    expect(navegacao).toHaveAttribute('data-aberto', 'true');
-  });
-
-  it('fecha o menu ao escolher uma tela', async () => {
-    autenticar();
-    const usuario = userEvent.setup();
-    renderizar();
-
-    await usuario.click(screen.getByRole('button', { name: 'Menu' }));
-    await usuario.click(screen.getByRole('link', { name: 'Extrato' }));
-
-    expect(await screen.findByRole('heading', { name: 'Extrato' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toHaveAttribute(
-      'data-aberto',
-      'false',
+    expect(
+      within(navegacao)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Lançamentos', 'Extrato', 'Organização']);
+    expect(within(navegacao).getByRole('link', { name: 'Lançamentos' })).toHaveAttribute(
+      'aria-current',
+      'page',
     );
   });
 
-  it('fecha o menu com Esc e devolve o foco ao botão', async () => {
+  // Resumo e Relatorio viraram a visao Resumo do extrato.
+  it('leva ao extrato', async () => {
     autenticar();
     const usuario = userEvent.setup();
     renderizar();
 
-    await usuario.click(screen.getByRole('button', { name: 'Menu' }));
-    await usuario.keyboard('{Escape}');
+    await usuario.click(screen.getByRole('link', { name: 'Extrato' }));
 
-    const botao = screen.getByRole('button', { name: 'Menu' });
-    expect(botao).toHaveAttribute('aria-expanded', 'false');
-    expect(botao).toHaveFocus();
+    expect(await screen.findByRole('heading', { name: 'Extrato' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Resumo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Relatório' })).not.toBeInTheDocument();
   });
 
   // Membros, categorias, dados e link publico ficam nas abas da area Organizacao.
