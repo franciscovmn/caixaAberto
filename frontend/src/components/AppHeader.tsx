@@ -1,17 +1,15 @@
-import { useRef, useState } from 'react';
-import type { KeyboardEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 
 import type { OrganizacaoDoUsuario } from '../lib/organizacoes';
 import { OrganizationSelector } from './OrganizationSelector';
 
 // O dia a dia fica no topo; membros, categorias, dados e link publico sao administracao, e moram
-// nas abas da area Organizacao em vez de disputar a mesma linha com os lancamentos.
+// nas abas da area Organizacao. Com tres links, a linha cabe ate no celular e dispensa o menu
+// recolhido, que escondia o caminho atras de mais um toque.
 const LINKS = [
   { to: '/lancamentos', rotulo: 'Lançamentos' },
   { to: '/extrato', rotulo: 'Extrato' },
-  { to: '/resumo', rotulo: 'Resumo' },
-  { to: '/relatorios/categorias', rotulo: 'Relatório' },
   { to: '/organizacao', rotulo: 'Organização' },
 ];
 
@@ -31,17 +29,8 @@ export function AppHeader({
   organizacaoId = null,
   onSelecionarOrganizacao,
 }: AppHeaderProps) {
-  const [menuAberto, setMenuAberto] = useState(false);
-  const botaoMenu = useRef<HTMLButtonElement>(null);
-
-  function fecharComEsc(event: KeyboardEvent<HTMLElement>) {
-    if (event.key !== 'Escape' || !menuAberto) return;
-    setMenuAberto(false);
-    botaoMenu.current?.focus();
-  }
-
   return (
-    <header className="marca" onKeyDown={fecharComEsc}>
+    <header className="marca">
       <div className="marca__interno">
         {comNavegacao ? (
           <Link to="/lancamentos" className="marca__nome">
@@ -60,14 +49,9 @@ export function AppHeader({
                 onChange={onSelecionarOrganizacao}
               />
             )}
-            <nav
-              id="navegacao-principal"
-              className="navegacao"
-              aria-label="Navegação principal"
-              data-aberto={menuAberto}
-            >
+            <nav className="navegacao" aria-label="Navegação principal">
               {LINKS.map((link) => (
-                <NavLink key={link.to} to={link.to} onClick={() => setMenuAberto(false)}>
+                <NavLink key={link.to} to={link.to}>
                   {link.rotulo}
                 </NavLink>
               ))}
@@ -79,24 +63,7 @@ export function AppHeader({
           !acoes && <p className="marca__legenda">Prestação de contas</p>
         )}
 
-        {(comNavegacao || acoes) && (
-          <div className="marca__fim">
-            {comNavegacao && (
-              <button
-                ref={botaoMenu}
-                type="button"
-                className="marca__menu"
-                data-variante="quieto"
-                aria-expanded={menuAberto}
-                aria-controls="navegacao-principal"
-                onClick={() => setMenuAberto((aberto) => !aberto)}
-              >
-                {menuAberto ? 'Fechar' : 'Menu'}
-              </button>
-            )}
-            {acoes}
-          </div>
-        )}
+        {acoes && <div className="marca__fim">{acoes}</div>}
       </div>
     </header>
   );

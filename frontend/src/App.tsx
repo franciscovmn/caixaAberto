@@ -4,12 +4,10 @@ import { OrganizationArea } from './components/OrganizationArea';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RotaTesoureiro } from './components/RotaTesoureiro';
 import { CategoriesPage } from './pages/CategoriesPage';
-import { CategoryReportPage } from './pages/CategoryReportPage';
 import { EditTransactionPage } from './pages/EditTransactionPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
 import { MembersPage } from './pages/MembersPage';
-import { MonthlySummaryPage } from './pages/MonthlySummaryPage';
 import { NewInflowPage } from './pages/NewInflowPage';
 import { NewOutflowPage } from './pages/NewOutflowPage';
 import { OrganizationFormPage } from './pages/OrganizationFormPage';
@@ -40,9 +38,10 @@ export function App() {
         </Route>
 
         <Route path="/lancamentos/:id" element={<TransactionDetailPage />} />
-        <Route path="/resumo" element={<MonthlySummaryPage />} />
         <Route path="/extrato" element={<StatementPage />} />
-        <Route path="/relatorios/categorias" element={<CategoryReportPage />} />
+        {/* Resumo mensal e relatorio por categoria viraram a visao Resumo do extrato. */}
+        <Route path="/resumo" element={<Navigate to="/extrato" replace />} />
+        <Route path="/relatorios/categorias" element={<Navigate to="/extrato" replace />} />
 
         <Route path="/organizacao" element={<OrganizationArea />}>
           <Route index element={<Navigate to="membros" replace />} />
