@@ -206,7 +206,7 @@ a:hover {
 .navegacao {
   grid-area: nav;
   display: flex;
-  gap: var(--space-5);
+  gap: var(--space-4);
   align-items: stretch;
   margin-top: var(--space-3);
   overflow-x: auto;
@@ -217,15 +217,7 @@ a:hover {
   display: none;
 }
 
-.navegacao__grupo {
-  display: flex;
-  gap: var(--space-4);
-  align-items: stretch;
-}
-
-/* No desktop o respiro entre os grupos ja separa Movimento de Organizacao; o titulo e o botao de
-   menu so entram no celular. */
-.navegacao__titulo,
+/* O botao de menu so entra no celular. */
 .marca__menu {
   display: none;
 }
@@ -252,8 +244,90 @@ a:hover {
   border-bottom-color: var(--color-accent);
 }
 
-/* Paginacao usa <nav> nu; mantida separada da navegacao principal. */
-nav:not(.navegacao) {
+/* ---------- Area da organizacao ---------- */
+/* Faixa entre o cabecalho e a pagina: diz de qual organizacao se trata e leva as abas de
+   administracao. A medida e a da faixa; a pagina dentro dela deixa de centralizar a propria. */
+.area-organizacao {
+  max-width: var(--medida-ampla);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-3) 0;
+}
+
+.area-organizacao__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.area-organizacao__rotulo {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+.area-organizacao__nome {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.subnavegacao {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  border-bottom: 1px solid var(--color-rule);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.subnavegacao::-webkit-scrollbar {
+  display: none;
+}
+
+.subnavegacao a {
+  flex: 0 0 auto;
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--color-ink-soft);
+  text-decoration: none;
+}
+
+.subnavegacao a:hover {
+  color: var(--color-ink);
+}
+
+.subnavegacao a[aria-current='page'] {
+  color: var(--color-ink);
+  font-weight: 600;
+  border-bottom-color: var(--color-accent);
+}
+
+.area-organizacao > main,
+.area-organizacao > main[data-largura='ampla'] {
+  max-width: none;
+  padding: var(--space-4) 0 0;
+}
+
+/* Formularios continuam na medida de leitura, mesmo com a faixa mais larga. */
+.area-organizacao > main > .formulario-coluna,
+.area-organizacao .public-link-panel {
+  max-width: var(--medida-texto);
+}
+
+/* Paginacao usa <nav> nu; mantida separada da navegacao principal e das abas. */
+nav:not(.navegacao, .subnavegacao) {
   display: flex;
   gap: var(--space-3);
   align-items: center;
@@ -1654,8 +1728,8 @@ dd {
 
 /* ---------- Responsivo ---------- */
 
-/* Ate 760px as oito abas nao cabem numa linha, e a navegacao vira uma lista aberta pelo botao
-   Menu. */
+/* Ate 760px as abas nao cabem numa linha ao lado do seletor, e a navegacao vira uma lista aberta
+   pelo botao Menu. */
 @media (max-width: 760px) {
   .marca__interno {
     grid-template-columns: 1fr auto;
@@ -1683,29 +1757,14 @@ dd {
   .navegacao {
     display: none;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 0;
     margin-top: var(--space-3);
     overflow: visible;
+    border-top: 1px solid var(--color-rule);
   }
 
   .navegacao[data-aberto='true'] {
     display: flex;
-  }
-
-  .navegacao__grupo {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .navegacao__titulo {
-    display: block;
-    padding-bottom: var(--space-1);
-    border-bottom: 1px solid var(--color-rule);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-ink-soft);
   }
 
   .navegacao a {
@@ -1792,14 +1851,10 @@ dd {
   }
 }
 
-/* Tablet em pe: as oito abas cabem numa linha com um espacamento menor. */
-@media (min-width: 761px) and (max-width: 1024px) {
-  .navegacao {
-    gap: var(--space-4);
-  }
-
-  .navegacao__grupo {
-    gap: var(--space-3);
+/* As abas da organizacao ficam visiveis tambem no celular, entao a area de toque vale sempre. */
+@media (pointer: coarse) {
+  .subnavegacao a {
+    padding-top: var(--space-3);
   }
 }
 
@@ -1827,6 +1882,10 @@ dd {
 @media (max-width: 480px) {
   main {
     padding: var(--space-4) var(--space-3);
+  }
+
+  .area-organizacao {
+    padding-top: var(--space-4);
   }
 
   .capa-publica h1 {

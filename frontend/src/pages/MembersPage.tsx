@@ -164,7 +164,7 @@ export function MembersPage() {
           </p>
         </div>
         {escrita && (
-          <Link className="acao" to="/organizacao/usuarios/novo">
+          <Link className="acao" to="/organizacao/membros/novo">
             Cadastrar usuário
           </Link>
         )}

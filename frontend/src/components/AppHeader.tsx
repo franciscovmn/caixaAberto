@@ -3,29 +3,16 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 
 import type { OrganizacaoDoUsuario } from '../lib/organizacoes';
-import { podeEscrever } from '../lib/session';
 import { OrganizationSelector } from './OrganizationSelector';
 
-// O titulo do grupo so aparece no menu recolhivel do celular.
-const GRUPOS = [
-  {
-    titulo: 'Movimento',
-    links: [
-      { to: '/lancamentos', rotulo: 'Lançamentos' },
-      { to: '/extrato', rotulo: 'Extrato' },
-      { to: '/resumo', rotulo: 'Resumo' },
-      { to: '/relatorios/categorias', rotulo: 'Relatório' },
-    ],
-  },
-  {
-    titulo: 'Organização',
-    links: [
-      { to: '/organizacao/membros', rotulo: 'Membros' },
-      { to: '/organizacao/categorias', rotulo: 'Categorias' },
-      { to: '/organizacao/editar', rotulo: 'Organização', somenteEscrita: true },
-      { to: '/organizacao/link-publico', rotulo: 'Link público', somenteEscrita: true },
-    ],
-  },
+// O dia a dia fica no topo; membros, categorias, dados e link publico sao administracao, e moram
+// nas abas da area Organizacao em vez de disputar a mesma linha com os lancamentos.
+const LINKS = [
+  { to: '/lancamentos', rotulo: 'Lançamentos' },
+  { to: '/extrato', rotulo: 'Extrato' },
+  { to: '/resumo', rotulo: 'Resumo' },
+  { to: '/relatorios/categorias', rotulo: 'Relatório' },
+  { to: '/organizacao', rotulo: 'Organização' },
 ];
 
 interface AppHeaderProps {
@@ -79,22 +66,17 @@ export function AppHeader({
               aria-label="Navegação principal"
               data-aberto={menuAberto}
             >
-              {GRUPOS.map((grupo) => (
-                <div key={grupo.titulo} className="navegacao__grupo">
-                  <span className="navegacao__titulo">{grupo.titulo}</span>
-                  {grupo.links
-                    .filter((link) => !link.somenteEscrita || podeEscrever())
-                    .map((link) => (
-                      <NavLink key={link.to} to={link.to} onClick={() => setMenuAberto(false)}>
-                        {link.rotulo}
-                      </NavLink>
-                    ))}
-                </div>
+              {LINKS.map((link) => (
+                <NavLink key={link.to} to={link.to} onClick={() => setMenuAberto(false)}>
+                  {link.rotulo}
+                </NavLink>
               ))}
             </nav>
           </>
         ) : (
-          <p className="marca__legenda">Prestação de contas</p>
+          // Legenda e acoes ocupam o mesmo canto; enquanto a area protegida carrega, o Sair
+          // ja aparece e a legenda sai para nao ficar por baixo dele.
+          !acoes && <p className="marca__legenda">Prestação de contas</p>
         )}
 
         {(comNavegacao || acoes) && (
