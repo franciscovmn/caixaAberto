@@ -52,12 +52,21 @@ export async function hasActiveMembershipOutside(
   return membership !== null;
 }
 
+// O tesoureiro digita o e-mail de outra pessoa, e a caixa que ele usa nao precisa ser a do cadastro.
+// A busca exata vem antes porque contas antigas podem diferir so na caixa.
 export async function findUserByEmail(
   email: string,
 ): Promise<{ id: bigint; active: boolean } | null> {
-  return prisma.user.findUnique({
+  const exact = await prisma.user.findUnique({
     where: { email },
     select: { id: true, active: true },
+  });
+  if (exact) return exact;
+
+  return prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+    select: { id: true, active: true },
+    orderBy: { id: 'asc' },
   });
 }
 
@@ -107,6 +116,13 @@ export class LastActiveTreasurerError extends Error {
   }
 }
 
+export class OwnRoleChangeError extends Error {
+  constructor() {
+    super('Você não pode alterar o seu próprio papel');
+    this.name = 'OwnRoleChangeError';
+  }
+}
+
 /**
  * Altera o papel de um vínculo ativo dentro da organização indicada.
  *
@@ -117,15 +133,20 @@ export async function updateActiveMemberRole(
   id: bigint,
   organizationId: bigint,
   role: Role,
+  requesterUserId: bigint,
 ): Promise<MemberRecord | null> {
   return prisma.$transaction(
     async (transaction) => {
       const current = await transaction.membership.findFirst({
         where: { id, organizationId, active: true },
-        select: { role: true },
+        select: { role: true, userId: true },
       });
 
       if (!current) return null;
+
+      // O papel e dado por outro tesoureiro. Quem se rebaixava perdia na hora o acesso que
+      // acabara de usar, e a propria tela continuava oferecendo acoes que a API passava a recusar.
+      if (current.userId === requesterUserId) throw new OwnRoleChangeError();
 
       if (current.role === 'TESOUREIRO' && role === 'CONSULTOR') {
         const activeTreasurers = await transaction.membership.count({

@@ -56,6 +56,18 @@ async function findByEmail(email: string) {
   });
 }
 
+// Quem digita o e-mail com outra caixa ("Maria@grupo.org") ainda e a mesma pessoa. A busca exata
+// vem antes porque contas antigas, de antes da regra de 2026-10-18, podem diferir so na caixa.
+async function findByEmailPreferringExact(email: string) {
+  const exact = await findByEmail(email);
+  if (exact) return exact;
+
+  return prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+    orderBy: { id: 'asc' },
+  });
+}
+
 async function findByEmailIgnoringCase(email: string) {
   return prisma.user.findFirst({
     where: { email: { equals: email, mode: 'insensitive' } },
@@ -172,6 +184,7 @@ export default {
   findByIdInOrganization,
   findById,
   findByEmail,
+  findByEmailPreferringExact,
   findByEmailIgnoringCase,
   create,
   createWithMembership,

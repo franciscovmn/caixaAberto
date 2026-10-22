@@ -67,10 +67,12 @@ export async function updateMemberRole(
     const params = updateMemberRoleParamsSchema.parse(request.params);
     const body = updateMemberRoleBodySchema.parse(request.body);
 
+    const contexto = getContexto(request);
     const result = await membershipService.changeMemberRole(
-      getContexto(request).organizacaoId,
+      contexto.organizacaoId,
       params.id,
       body.papel,
+      contexto.usuarioId,
     );
 
     response.status(200).json(result);

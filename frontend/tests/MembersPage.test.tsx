@@ -191,6 +191,35 @@ describe('MembersPage', () => {
     expect(api.chamadasPara('/membros/12/papel')[0]!.body).toEqual({ papel: 'TESOUREIRO' });
   });
 
+  it('mostra o próprio papel sem a troca, que é feita por outro tesoureiro', async () => {
+    autenticar();
+    stubApi({
+      '/users/me/organizacoes': { body: ORGANIZACOES_DO_USUARIO },
+      '/organizacoes/2/membros': {
+        body: {
+          dados: [
+            {
+              id: '15',
+              usuario: { id: '1', nome: 'Ana', email: 'ana@grupo.org' },
+              papel: 'TESOUREIRO',
+              dataVinculo: '2026-01-01',
+              ativo: true,
+            },
+            ...MEMBROS.dados,
+          ],
+        },
+      },
+    });
+
+    renderizar();
+
+    const linhaDaAna = (await screen.findByText('Ana')).closest('tr')!;
+    expect(within(linhaDaAna).getByText('(você)')).toBeInTheDocument();
+    expect(within(linhaDaAna).getByText('Tesoureiro')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Papel de Ana')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Papel de Maria')).toBeInTheDocument();
+  });
+
   it('avisa quando tenta rebaixar o último tesoureiro', async () => {
     autenticar();
     stubApi({

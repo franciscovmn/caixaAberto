@@ -1115,6 +1115,12 @@ td[data-coluna='acao'] {
   color: var(--color-saida);
 }
 
+/* Marca a linha de quem consulta a lista de membros, que nao troca o proprio papel. */
+.membro__voce {
+  font-weight: 400;
+  color: var(--color-ink-soft);
+}
+
 .marcador-comprovante {
   display: inline-block;
   color: var(--color-ink-soft);

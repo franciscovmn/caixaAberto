@@ -151,6 +151,21 @@ describe('vincular usuário à organização (US09)', () => {
     expect(response.body.usuario.email).toBe('maria@grupo.org');
   });
 
+  it('encontra o usuário pelo e-mail digitado com outras maiúsculas', async () => {
+    const { organization, authorization } = await criarOrganizacao();
+    const maria = await createUser({ email: 'maria@grupo.org' });
+
+    const response = await vincular(organization.id, authorization, {
+      email: 'Maria@Grupo.ORG',
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.usuario).toMatchObject({
+      id: maria.id.toString(),
+      email: 'maria@grupo.org',
+    });
+  });
+
   it('recusa vincular conta inativa', async () => {
     const { organization, authorization } = await criarOrganizacao();
     await createUser({ email: 'maria@grupo.org', active: false });
