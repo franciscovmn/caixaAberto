@@ -208,3 +208,17 @@ e soma o resto numa linha "Outras", com um botão para ver todas.
 Membros, categorias, dados da organização e link público saíram do cabeçalho para uma área
 Organização com abas. Com três links no topo, a linha cabe no celular, e o menu recolhido de
 2026-10-18 deixou de ser necessário.
+
+## 2026-10-22: Exclusão lógica da organização
+
+Não havia como remover uma organização: a F05 virou só cadastrar (US07) e alterar (US08), e
+nenhuma das user stories da proposta trata da exclusão. A remoção entrou como melhoria, e é lógica,
+pelo mesmo motivo que lançamento é estornado e categoria é desativada: a organização é dona da
+trilha de auditoria. `ORGANIZACAO.ativa` passa a `false`, os vínculos são desativados e a
+transparência é desligada, numa só transação.
+
+Desativar os vínculos, e não só a organização, faz com que toda consulta que já exige vínculo
+ativo (contexto, lista de organizações do usuário, conta que responde a outro tesoureiro) deixe a
+organização de fora sem precisar de filtro novo. Reativar não tem rota: se for preciso, o caminho
+é reativar a organização e os vínculos que estavam ativos na data da exclusão, o que exigiria
+guardar essa data.

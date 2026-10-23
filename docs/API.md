@@ -845,6 +845,24 @@ Erros:
 - `404`: organização diferente da do contexto;
 - `409`: o novo período deixa lançamentos de fora.
 
+### `DELETE /organizacoes/{id}`
+
+Exige autenticação e papel `TESOUREIRO`. O `{id}` precisa ser a organização do contexto. A exclusão
+é lógica, como a de categoria: a organização fica inativa, todos os vínculos são desativados e a
+transparência pública é desligada, numa só transação. Lançamentos, categorias e comprovantes ficam
+no banco como trilha de auditoria. Depois disso a organização sai de
+[`GET /users/me/organizacoes`](#get-usersmeorganizacoes), ninguém mais a usa em
+`X-Organization-Id` e o link público responde `404`. Não há rota para desfazer.
+
+Sucesso `204`, sem corpo.
+
+Erros:
+
+- `400`: ID inválido;
+- `401`: autenticação ausente ou inválida;
+- `403`: papel sem permissão ou vínculo inativo;
+- `404`: organização diferente da do contexto.
+
 ## Transparência pública
 
 ### `GET /organizacoes/atual/link-publico`

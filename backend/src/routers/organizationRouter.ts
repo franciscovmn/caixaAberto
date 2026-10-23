@@ -72,4 +72,14 @@ router.put(
   organizationController.updateOrganization,
 );
 
+// Excluir a organizacao: exclusao logica, so pelo tesoureiro dela.
+router.delete(
+  '/:id',
+  authenticate,
+  loadContext,
+  requireContextOrganization,
+  requireRole('TESOUREIRO'),
+  organizationController.deleteOrganization,
+);
+
 export default router;

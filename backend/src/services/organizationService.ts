@@ -130,3 +130,13 @@ export async function updateOrganization(organizationId: bigint, input: UpdateOr
 
   return formatOrganization(updated);
 }
+
+// A rota so chega aqui com a organizacao do contexto, entao ela existe e quem chama e tesoureiro
+// dela. O 404 cobre o pedido repetido, que encontra a organizacao ja excluida.
+export async function removeOrganization(organizationId: bigint): Promise<void> {
+  const removed = await organizationRepository.deactivateById(organizationId);
+
+  if (!removed) {
+    throw new AppError(404, ORGANIZATION_NOT_FOUND);
+  }
+}

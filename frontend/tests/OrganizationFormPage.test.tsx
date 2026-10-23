@@ -176,4 +176,72 @@ describe('OrganizationFormPage', () => {
     );
     expect(screen.queryByRole('heading', { name: 'Lançamentos' })).not.toBeInTheDocument();
   });
+
+  it('só libera a exclusão depois que o nome da organização é digitado', async () => {
+    autenticar();
+    const api = stubApi({ '/users/me/organizacoes': VINCULOS });
+    const usuario = userEvent.setup();
+    renderizar('/organizacao/editar');
+
+    const botao = await screen.findByRole('button', { name: 'Excluir organização' });
+    expect(botao).toBeDisabled();
+
+    await usuario.type(screen.getByLabelText(/para confirmar/), 'Comissão');
+    expect(botao).toBeDisabled();
+
+    await usuario.type(screen.getByLabelText(/para confirmar/), ' de Formatura');
+    expect(botao).toBeEnabled();
+    expect(api.chamadas.filter((c) => c.method === 'DELETE')).toHaveLength(0);
+  });
+
+  it('exclui a organização, relê a lista e abre os lançamentos', async () => {
+    autenticar();
+    const api = stubApi({
+      '/users/me/organizacoes': VINCULOS,
+      '/organizacoes/1': { status: 204 },
+    });
+    const usuario = userEvent.setup();
+    renderizar('/organizacao/editar');
+
+    await screen.findByDisplayValue('Comissão de Formatura');
+    const leiturasAntes = api.chamadasPara('/users/me/organizacoes').length;
+    await usuario.type(screen.getByLabelText(/para confirmar/), 'Comissão de Formatura');
+    await usuario.click(screen.getByRole('button', { name: 'Excluir organização' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lançamentos' })).toBeInTheDocument();
+    const exclusao = api.chamadas.find((c) => c.method === 'DELETE');
+    expect(exclusao?.url).toMatch(/\/organizacoes\/1$/);
+    expect(api.chamadasPara('/users/me/organizacoes').length).toBeGreaterThan(leiturasAntes);
+  });
+
+  it('mostra a recusa da API ao excluir', async () => {
+    autenticar();
+    stubApi({
+      '/users/me/organizacoes': VINCULOS,
+      '/organizacoes/1': {
+        status: 403,
+        body: { erro: 'Acesso permitido apenas para TESOUREIRO' },
+      },
+    });
+    const usuario = userEvent.setup();
+    renderizar('/organizacao/editar');
+
+    await screen.findByDisplayValue('Comissão de Formatura');
+    await usuario.type(screen.getByLabelText(/para confirmar/), 'Comissão de Formatura');
+    await usuario.click(screen.getByRole('button', { name: 'Excluir organização' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Acesso permitido apenas para TESOUREIRO',
+    );
+    expect(screen.queryByRole('heading', { name: 'Lançamentos' })).not.toBeInTheDocument();
+  });
+
+  it('não oferece a exclusão na criação', async () => {
+    autenticar();
+    stubApi({ '/users/me/organizacoes': VINCULOS });
+    renderizar('/organizacao/nova');
+
+    await screen.findByRole('link', { name: 'Voltar para a organização atual' });
+    expect(screen.queryByRole('button', { name: 'Excluir organização' })).not.toBeInTheDocument();
+  });
 });

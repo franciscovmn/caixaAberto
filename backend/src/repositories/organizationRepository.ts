@@ -125,3 +125,25 @@ export async function updateById(id: bigint, data: UpdateOrganizationData) {
     select: organizationSelection,
   });
 }
+
+// Exclusao logica, como a de categoria: lancamentos, categorias e comprovantes ficam no banco como
+// trilha de auditoria. Sem vinculo ativo ninguem mais carrega a organizacao como contexto, e sem
+// transparencia ativa o link publico deixa de responder. Tudo numa transacao, para nao sobrar
+// organizacao excluida com membro entrando nela.
+export async function deactivateById(id: bigint): Promise<boolean> {
+  return prisma.$transaction(async (transaction) => {
+    const { count } = await transaction.organization.updateMany({
+      where: { id, active: true },
+      data: { active: false, transparencyActive: false },
+    });
+
+    if (count === 0) return false;
+
+    await transaction.membership.updateMany({
+      where: { organizationId: id, active: true },
+      data: { active: false },
+    });
+
+    return true;
+  });
+}

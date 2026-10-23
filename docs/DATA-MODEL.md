@@ -36,6 +36,10 @@ pode ser executada do zero com `npm run prisma:migrate:deploy -w backend`.
 | `fim_gestao`          | `DATE`         | não  | nenhum                  |
 | `link_publico`        | `VARCHAR(255)` | sim  | único quando preenchido |
 | `transparencia_ativa` | `BOOLEAN`      | não  | `false`                 |
+| `ativa`               | `BOOLEAN`      | não  | `true`                  |
+
+`ativa = false` marca a organização excluída. A exclusão também desativa os vínculos e a
+transparência, e mantém lançamentos, categorias e comprovantes.
 
 ### `MEMBRO`
 
