@@ -98,3 +98,19 @@ export async function updateOrganization(
     next(error);
   }
 }
+
+export async function deleteOrganization(
+  request: AuthRequest,
+  response: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const params = organizationIdParamSchema.parse(request.params);
+
+    await organizationService.removeOrganization(params.id);
+
+    response.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}

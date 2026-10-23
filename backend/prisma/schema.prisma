@@ -65,6 +65,7 @@ model Organization {
   managementEnd      DateTime      @map("fim_gestao") @db.Date
   publicLink         String?       @unique(map: "ORGANIZACAO_link_publico_key") @map("link_publico") @db.VarChar(255)
   transparencyActive Boolean       @default(false) @map("transparencia_ativa")
+  active             Boolean       @default(true) @map("ativa")
   memberships        Membership[]
   categories         Category[]
   transactions       Transaction[]

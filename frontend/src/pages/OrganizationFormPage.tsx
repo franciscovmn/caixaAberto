@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { ExclusaoOrganizacao } from '../components/ExclusaoOrganizacao';
 import { ApiError, apiRequest } from '../lib/httpClient';
 import type { OrganizacaoResponse } from '../lib/organizacoes';
 import { useOrganizationContext } from '../contexts/useOrganizacao';
@@ -215,6 +216,13 @@ export function OrganizationFormPage({ modo }: OrganizationFormPageProps) {
           {salvando ? 'Salvando...' : editar ? 'Salvar alterações' : 'Criar organização'}
         </button>
       </form>
+
+      {editar && organizacaoSelecionada && (
+        <ExclusaoOrganizacao
+          id={organizacaoSelecionada.organizacao.id}
+          nome={organizacaoSelecionada.organizacao.nome}
+        />
+      )}
 
       {temOutra && (
         <p>

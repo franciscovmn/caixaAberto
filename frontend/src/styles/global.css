@@ -321,6 +321,25 @@ a:hover {
   max-width: var(--medida-texto);
 }
 
+/* Exclusao da organizacao, no fim da aba Dados e separada do formulario por uma regua. */
+.zona-exclusao {
+  max-width: var(--medida-texto);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-rule);
+}
+
+.zona-exclusao h2 {
+  margin-bottom: var(--space-2);
+  font-size: 1.0625rem;
+}
+
+.zona-exclusao > p {
+  margin: 0 0 var(--space-3);
+  font-size: 0.875rem;
+  color: var(--color-ink-soft);
+}
+
 /* Paginacao usa <nav> nu; mantida separada da navegacao principal e das abas. */
 nav:not(.navegacao, .subnavegacao) {
   display: flex;
@@ -782,6 +801,19 @@ button[data-variante='secundario']:hover:not(:disabled) {
   border-color: var(--color-ink);
   background: var(--color-surface);
   color: var(--color-ink);
+}
+
+/* Acao que nao tem volta: contorno vermelho em repouso, cheio so quando o ponteiro chega. */
+button[data-variante='perigo'] {
+  background: var(--color-surface);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+button[data-variante='perigo']:hover:not(:disabled) {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-surface);
 }
 
 button[data-variante='quieto'] {
